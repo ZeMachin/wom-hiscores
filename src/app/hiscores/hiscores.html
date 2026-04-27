@@ -1,0 +1,152 @@
+<div class="container">
+  <div class="card">
+    <h2>Load Hiscores</h2>
+    
+    <div class="form-group">
+      <label for="playerName">Player Name:</label>
+      <div class="input-group">
+        <input 
+          id="playerName"
+          type="text" 
+          [(ngModel)]="playerName"
+          placeholder="Enter player name"
+          (keyup.enter)="onPlayerNameSubmit()"
+        />
+        <p-button (click)="onPlayerNameSubmit()" [disabled]="isLoadingGroups()">
+          {{ isLoadingGroups() ? 'Loading...' : 'Load Groups' }}
+        </p-button>
+      </div>
+    </div>
+
+    @if(groups().length > 0) {
+      <div class="form-group">
+        <label for="groupSelect">Select Group:</label>
+        <p-select 
+          id="groupSelect"
+          [(ngModel)]="selectedGroupId" 
+          (onChange)="onGroupSelect()"
+          [disabled]="isLoadingHiscores()"
+          placeholder="-- Choose a group --"
+          [options]="groups()"
+          optionLabel="name"
+          optionValue="id"
+          ></p-select>
+      </div>
+    }
+
+    @if(isLoadingHiscores()) {
+      <p>Loading hiscores...</p>
+    }
+  </div>
+
+  @if(scores().length > 0) {
+    <div class="card">
+      <h3>Bulk Refresh Options</h3>
+      <div class="button-group">
+        <p-button 
+          (click)="refreshAll()"
+          [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)"
+          [loading]="isRefreshingAll()"
+          severity="primary"
+        >
+          Refresh All
+        </p-button>
+        <p-button 
+          (click)="refreshByMetricType('skill')"
+          [disabled]="isRefreshingSkills() || (refreshingMetrics().size > 0)"
+          [loading]="isRefreshingSkills()"
+          severity="info"
+        >
+          Refresh Skills
+        </p-button>
+        <p-button 
+          (click)="refreshByMetricType('boss')"
+          [disabled]="isRefreshingBosses() || (refreshingMetrics().size > 0)"
+          [loading]="isRefreshingBosses()"
+          severity="info"
+        >
+          Refresh Bosses
+        </p-button>
+        <p-button 
+          (click)="refreshByMetricType('activity')"
+          [disabled]="isRefreshingActivities() || (refreshingMetrics().size > 0)"
+          [loading]="isRefreshingActivities()"
+          severity="info"
+        >
+          Refresh Activities
+        </p-button>
+        <p-button 
+          (click)="refreshByMetricType('computed')"
+          [disabled]="isRefreshingComputedMetrics() || (refreshingMetrics().size > 0)"
+          [loading]="isRefreshingComputedMetrics()"
+          severity="info"
+        >
+          Refresh Computed
+        </p-button>
+      </div>
+      <p-divider />
+      <p-table [value]="scores()" [tableStyle]="{ 'min-width': '50rem' }">
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="score.metric" style="width:15%">
+              <div class="flex items-center gap-2">
+                Metric
+                <p-sortIcon field="score.metric" />
+              </div>
+            </th>
+            <th pSortableColumn="score.ranking" style="width:15%">
+              <div class="flex items-center gap-2">
+                Ranking
+                <p-sortIcon field="score.ranking" />
+              </div>
+            </th>
+            <th pSortableColumn="score.value" style="width:15%">
+              <div class="flex items-center gap-2">
+                Value
+                <p-sortIcon field="score.value" />
+              </div>
+            </th>
+            <th pSortableColumn="score.next.timeToNext" style="width:15%">
+              <div class="flex items-center gap-2">
+                Next Step
+                <p-sortIcon field="score.next.timeToNext" />
+              </div>
+            </th>
+            <th pSortableColumn="score.first.timeToFirst" style="width:15%">
+              <div class="flex items-center gap-2">
+                First
+                <p-sortIcon field="score.first.timeToFirst" />
+              </div>
+            </th>
+            <th style="width:15%">Cache Age</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-scoreWithCache>
+          <tr [style.color]="getRankColor(scoreWithCache)">
+            <td>{{ scoreWithCache.score.metric }}{{getUnit(scoreWithCache.score.metric)}}</td>
+            <td>{{ scoreWithCache.score.ranking }}</td>
+            <td>{{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}</td>
+            <td>{{ scoreWithCache.score.next.value !== 'N/A' ? `${(scoreWithCache.score.next.value | number:'1.0-0')}${getUnit(scoreWithCache.score.metric)} - ${scoreWithCache.score.next.player}` : 'N/A' }}<br>@if(scoreWithCache.score.next.difference !== 0){(+{{ scoreWithCache.score.next.difference !== 'N/A' ? (scoreWithCache.score.next.difference | number:'1.0-0')+getUnit(scoreWithCache.score.metric) : 'N/A' }})<br>{{ scoreWithCache.score.next.timeToNext !== 'N/A' ? `(+${(scoreWithCache.score.next.timeToNext | number:'1.0-0')}h)` : '' }}}</td>
+            <td>{{ scoreWithCache.score.first.value !== 'N/A' ? `${(scoreWithCache.score.first.value | number:'1.0-0')}${getUnit(scoreWithCache.score.metric)} - ${scoreWithCache.score.first.player}` : 'N/A' }}<br>(+{{ scoreWithCache.score.first.difference !== 'N/A' ? (scoreWithCache.score.first.difference | number:'1.0-0')+getUnit(scoreWithCache.score.metric) : 'N/A' }})<br>{{ scoreWithCache.score.first.timeToFirst !== 'N/A' ? `(+${(scoreWithCache.score.first.timeToFirst | number:'1.0-0')}h)` : '' }}</td>
+            <td>
+              <div class="flex flex-col gap-2">
+                @if(scoreWithCache.isCached && scoreWithCache.cacheTimestamp) {
+                  <span class="text-sm">{{ getCacheAge(scoreWithCache.cacheTimestamp) }}</span>
+                  <p-button 
+                    (click)="refreshScore(scoreWithCache)"
+                    [disabled]="isRefreshDisabled(scoreWithCache.cacheTimestamp) || refreshingMetrics().has(scoreWithCache.score.metric)"
+                    [loading]="refreshingMetrics().has(scoreWithCache.score.metric)"
+                    severity="secondary"
+                    size="small"
+                  >
+                    Refresh
+                  </p-button>
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+</div>
