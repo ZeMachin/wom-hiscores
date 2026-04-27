@@ -25,6 +25,7 @@
     "@angular/ssr": "^21.2.6",
     "@primeuix/themes": "^2.0.3",
     "@wise-old-man/utils": "^4.0.14",
+    "angular-cli-ghpages": "^3.0.3",
     "colors": "^1.4.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.2",
