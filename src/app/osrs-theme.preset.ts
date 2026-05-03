@@ -73,6 +73,17 @@ const osrsPreset = deepMerge({
             bodyCell: {
                 padding: '8'
             }
+        },
+        tooltip: {
+            background: '#2b2418',
+            color: '#f4e7b9',
+            borderColor: '#8a6f3f',
+            padding: '8px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            maxWidth: '300px',
+            border: '1px solid #8a6f3f',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
         }
     },
     semantic: {

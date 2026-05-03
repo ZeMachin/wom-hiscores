@@ -1,13 +1,14 @@
 import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { GroupResponse, Metric, Skill, Boss, Activity, ComputedMetric, PlayerDetailsResponse } from '@wise-old-man/utils';
-import { WomService, Score } from '../services/wom.service';
+import { WomService, Score, Goal } from '../services/wom.service';
 import { TableModule } from 'primeng/table';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from "primeng/button";
 import { DividerModule } from 'primeng/divider';
+import { TooltipModule } from 'primeng/tooltip';
 
 type ScoreWithCache = {
   score: Score;
@@ -17,7 +18,7 @@ type ScoreWithCache = {
 
 @Component({
   selector: 'app-hiscores',
-  imports: [TableModule, DecimalPipe, FormsModule, SelectModule, ButtonModule, DividerModule],
+  imports: [TableModule, DecimalPipe, FormsModule, SelectModule, ButtonModule, DividerModule, TooltipModule],
   templateUrl: './hiscores.html',
   styleUrl: './hiscores.css',
 })
@@ -444,5 +445,16 @@ export class Hiscores implements OnInit {
     if (this.womService.isSkillMetric(metric)) return ' exp';
     if (this.womService.isBossMetric(metric)) return ' kc';
     return '';
+  }
+
+  getToolTip(goal: Goal, score: Score): string {
+    let string = goal.value !== 'N/A' ? `${new Intl.NumberFormat().format(goal.value)}${this.getUnit(score.metric)} - ${goal.player}` : 'N/A';
+    if (goal.difference !== 0) {
+      string += `\n+${goal.difference !== 'N/A' ? new Intl.NumberFormat().format(goal.difference) + this.getUnit(score.metric) : 'N/A'}`;
+    }
+    if (goal.timeToGoal !== 'N/A') {
+      string += `\n(${new Intl.NumberFormat(navigator.language, { style: 'unit', unit: 'hour', maximumFractionDigits: 0 }).format(goal.timeToGoal)})`;
+    }
+    return string;
   }
 }

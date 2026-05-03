@@ -91,16 +91,16 @@
                 <p-sortIcon field="score.value" />
               </div>
             </th>
-            <th pSortableColumn="score.next.timeToNext" style="width:15%">
+            <th pSortableColumn="score.next.timeToGoal" style="width:15%">
               <div class="flex items-center gap-2">
                 Next Step
-                <p-sortIcon field="score.next.timeToNext" />
+                <p-sortIcon field="score.next.timeToGoal" />
               </div>
             </th>
-            <th pSortableColumn="score.first.timeToFirst" style="width:15%">
+            <th pSortableColumn="score.first.timeToGoal" style="width:15%">
               <div class="flex items-center gap-2">
                 First
-                <p-sortIcon field="score.first.timeToFirst" />
+                <p-sortIcon field="score.first.timeToGoal" />
               </div>
             </th>
             <th style="width:15%">Cache Age</th>
@@ -114,21 +114,14 @@
             <td>{{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') +
               getUnit(scoreWithCache.score.metric) : 'N/A' }}</td>
             <td>
-              <div class="pr-2">{{ scoreWithCache.score.next.value !== 'N/A' ? `${(scoreWithCache.score.next.value |
-                number:'1.0-0')}${getUnit(scoreWithCache.score.metric)} - ${scoreWithCache.score.next.player}` : 'N/A'
-                }}<br>@if(scoreWithCache.score.next.difference !== 0){(+{{ scoreWithCache.score.next.difference !==
-                'N/A'
-                ? (scoreWithCache.score.next.difference | number:'1.0-0')+getUnit(scoreWithCache.score.metric) : 'N/A'
-                }})<br>{{ scoreWithCache.score.next.timeToNext !== 'N/A' ? `(+${(scoreWithCache.score.next.timeToNext |
-                number:'1.0-0')}h)` : '' }}}</div>
+              <div class="pr-2" [pTooltip]="getToolTip(scoreWithCache.score.next, scoreWithCache.score)">{{ scoreWithCache.score.next.value !== 'N/A' ? `${(scoreWithCache.score.next.value |
+                number:'1.0-0')}${getUnit(scoreWithCache.score.metric)}` : 'N/A'
+                }}</div>
             </td>
             <td>
-              <div class="pr-2">{{ scoreWithCache.score.first.value !== 'N/A' ? `${(scoreWithCache.score.first.value |
-                number:'1.0-0')}${getUnit(scoreWithCache.score.metric)} - ${scoreWithCache.score.first.player}` : 'N/A'
-                }}<br>(+{{ scoreWithCache.score.first.difference !== 'N/A' ? (scoreWithCache.score.first.difference |
-                number:'1.0-0')+getUnit(scoreWithCache.score.metric) : 'N/A' }})<br>{{
-                scoreWithCache.score.first.timeToFirst !== 'N/A' ? `(+${(scoreWithCache.score.first.timeToFirst |
-                number:'1.0-0')}h)` : '' }}</div>
+              <div class="pr-2" [pTooltip]="getToolTip(scoreWithCache.score.first, scoreWithCache.score)">{{ scoreWithCache.score.first.value !== 'N/A' ? `${(scoreWithCache.score.first.value |
+                number:'1.0-0')}${getUnit(scoreWithCache.score.metric)}` : 'N/A'
+                }}</div>
             </td>
             <td>
               <div class="flex flex-row gap-2 align-content-center justify-content-around w-full">

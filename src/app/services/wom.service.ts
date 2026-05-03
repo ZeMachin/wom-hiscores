@@ -10,18 +10,15 @@ export type Score = {
   metric: Metric;
   ranking: number | 'N/A';
   value: number | 'N/A';
-  next: {
-    value: number | 'N/A';
-    difference: number | 'N/A';
-    player: string | 'N/A';
-    timeToNext: number | 'N/A';
-  };
-  first: {
-    value: number | 'N/A';
-    difference: number | 'N/A';
-    player: string | 'N/A';
-    timeToFirst: number | 'N/A';
-  };
+  next: Goal;
+  first: Goal;
+};
+
+export type Goal = {
+  value: number | 'N/A';
+  difference: number | 'N/A';
+  player: string | 'N/A';
+  timeToGoal: number | 'N/A';
 };
 
 const client = new WOMClient({
@@ -135,13 +132,13 @@ export class WomService {
           value: 'N/A',
           difference: 'N/A',
           player: 'N/A',
-          timeToFirst: 'N/A'
+          timeToGoal: 'N/A'
         },
         next: {
           value: 'N/A',
           difference: 'N/A',
           player: 'N/A',
-          timeToNext: 'N/A',
+          timeToGoal: 'N/A',
         },
       };
     } else {
@@ -153,13 +150,13 @@ export class WomService {
           value: this.getValue(hiscores[0]),
           difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[0], metric),
           player: hiscores[0].player.displayName,
-          timeToFirst: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[0], metric, player.build)
+          timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[0], metric, player.build)
         },
         next: {
           value: idx === 0 ? 'N/A' : this.getValue(hiscores[idx - 1]),
           difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[idx - 1], metric),
           player: idx === 0 ? '' : hiscores[idx - 1].player.displayName,
-          timeToNext: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[idx - 1], metric, player.build)
+          timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[idx - 1], metric, player.build)
         }
       };
     }
