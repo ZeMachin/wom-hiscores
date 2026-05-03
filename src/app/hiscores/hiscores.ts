@@ -113,6 +113,9 @@ export class Hiscores implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!this.isBrowser) {
+      return;
+    }
     // Read initial values from route parameters
     this.activatedRoute.params.subscribe(params => {
       const playerName = params['playerName'];
@@ -152,6 +155,10 @@ export class Hiscores implements OnInit {
 
     this.isLoadingGroups.set(true);
     try {
+      if (!this.isBrowser) {
+        console.error('Cannot fetch player details in a non-browser environment without localStorage support.');
+        return;
+      }
       const fetchedGroups = await this.womService.getPlayerGroups(this.playerName());
       this.groups.set(fetchedGroups);
       if (resetGroupId) {
@@ -174,6 +181,11 @@ export class Hiscores implements OnInit {
     const scores: ScoreWithCache[] = [];
     this.scores.set([]);
     this.isLoadingHiscores.set(true);
+
+    if (!this.isBrowser) {
+      console.error('Cannot fetch player details in a non-browser environment without localStorage support.');
+      return;
+    }
 
     const playerDetails: PlayerDetailsResponse = await this.womService.getPlayerDetails(playerName);
     this.playerDetails.set(playerDetails);
