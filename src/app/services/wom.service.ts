@@ -60,12 +60,15 @@ function setStorageCache(cacheKey: string, data: unknown): void {
   providedIn: 'root',
 })
 export class WomService {
+  private isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 
   async getPlayerDetails(playerName: string): Promise<PlayerDetailsResponse> {
+    if (!this.isBrowser) throw new Error('Player details can only be fetched in a browser environment with localStorage support.');
     return await client.players.getPlayerDetails(playerName);
   }
 
   async getEhbRates(eat: EfficiencyAlgorithmType): Promise<BossMetaConfig[]> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     const cacheKey = `ehb_${eat}`;
     const cached = getStorageCache<BossMetaConfig[]>(cacheKey);
     if (cached) {
@@ -82,6 +85,7 @@ export class WomService {
   }
 
   async getEhpRates(eat: EfficiencyAlgorithmType): Promise<SkillMetaConfig[]> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     const cacheKey = `ehp_${eat}`;
     const cached = getStorageCache<SkillMetaConfig[]>(cacheKey);
     if (cached) {
@@ -98,11 +102,13 @@ export class WomService {
   }
 
   async getPlayerGroups(playerName: string): Promise<GroupResponse[]> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     const groups = await client.players.getPlayerGroups(playerName);
     return groups.map((membership) => membership.group);
   }
 
   async getHiscoreForMetric(groupId: number, metric: Metric, player: PlayerDetailsResponse, limit = 25): Promise<Score> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
 
     const hiscores = await client.groups.getGroupHiscores(groupId, metric, { limit });
 
@@ -160,6 +166,7 @@ export class WomService {
   }
 
   async computeTimeBetweenScores(playerHiscore: GroupHiscoresEntryResponse, otherPlayerHiscore: GroupHiscoresEntryResponse, metric: Metric, playerBuild: PlayerBuild): Promise<number | 'N/A'> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     const playerValue = this.getValue(playerHiscore);
     const nextPlayerValue = this.getValue(otherPlayerHiscore);
 
@@ -169,21 +176,21 @@ export class WomService {
 
     const valueDifference = this.metricDifference(playerHiscore, otherPlayerHiscore, metric);
 
-    if(valueDifference === 'N/A' || valueDifference <= 0) {
+    if (valueDifference === 'N/A' || valueDifference <= 0) {
       return 'N/A';
     }
 
     if (this.isSkillMetric(metric)) {
       const ehpRates = await this.getEhpRates(playerBuild as unknown as EfficiencyAlgorithmType);
       const skillConfig = ehpRates.find(config => config.skill === metric) as SkillMetaConfig;
-      if(!skillConfig) {
+      if (!skillConfig) {
         return 'N/A';
       }
       return this.computeTimeBetweenSkills(playerHiscore.data ? (playerHiscore.data as GroupHiscoresSkillData).experience : 0, otherPlayerHiscore.data ? (otherPlayerHiscore.data as GroupHiscoresSkillData).experience : 0, skillConfig);
     } else if (this.isBossMetric(metric)) {
       const ehbRates = await this.getEhbRates(playerBuild as unknown as EfficiencyAlgorithmType);
       const bossConfig = ehbRates.find(config => config.boss === metric) as BossMetaConfig;
-      if(!bossConfig) {
+      if (!bossConfig) {
         return 'N/A';
       }
       return Math.ceil(valueDifference / bossConfig.rate);
@@ -194,15 +201,15 @@ export class WomService {
 
   computeTimeBetweenSkills(start: number, end: number, meta: SkillMetaConfig): number {
     let totalTime = 0;
-    for(const [key, method] of meta.methods.entries()) {
+    for (const [key, method] of meta.methods.entries()) {
       const isLastMethod: boolean = key === meta.methods.length - 1;
-      if(isLastMethod) {
+      if (isLastMethod) {
         totalTime += (end - method.startExp) / method.rate;
       } else if (start < method.startExp) {
         const nextMethod = meta.methods[key + 1];
         const effectiveStartExp = Math.max(start, method.startExp);
         const effectiveEndExp = Math.min(end, nextMethod.startExp);
-        if(effectiveEndExp > effectiveStartExp) {
+        if (effectiveEndExp > effectiveStartExp) {
           totalTime += (effectiveEndExp - effectiveStartExp) / method.rate;
         }
       }
