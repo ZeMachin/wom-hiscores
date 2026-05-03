@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterOutlet } from "@angular/router";
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { Router, RouterOutlet } from "@angular/router";
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet],
@@ -7,5 +7,15 @@ import { RouterOutlet } from "@angular/router";
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class App {
+export class App implements OnInit {
+
+  constructor(
+    private router: Router
+  ) {
+  }
+
+  ngOnInit(): void {
+    this.router.navigateByUrl('/hiscores');
+  }
+  
 }
