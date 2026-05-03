@@ -5,13 +5,13 @@ import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
 import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeuix/themes/aura';
+import osrsPreset from './osrs-theme.preset';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     providePrimeNG({
       theme: {
-        preset: Aura
+        preset: osrsPreset
       }
     }),
     provideBrowserGlobalErrorListeners(),

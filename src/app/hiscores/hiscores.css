@@ -103,16 +103,17 @@ select,
 
 .osrs-button,
 .p-button {
-  min-height: 46px;
-  padding: 0 18px;
+  /* min-height: 46px; */
+  padding: 11px 18px;
   border-radius: 8px;
   border: 2px solid #74532f;
   background: linear-gradient(180deg, #f3e4b6 0%, #c9ae6f 100%);
   color: #2a1e0f;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  cursor: pointer;
 }
 
 .osrs-button:hover:not(:disabled),
@@ -194,6 +195,17 @@ select,
 .text-sm {
   font-size: 0.88rem;
   color: #d9d0b3;
+}
+
+.osrs-select {
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.small-button {
+  padding: 6px 12px;
+  font-size: 0.88rem;
+  width: fit-content;
 }
 
 @media (max-width: 900px) {
