@@ -29,6 +29,33 @@ const client = new WOMClient({
   userAgent
 });
 
+const hasLocalStorage = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+function getStorageCache<T>(cacheKey: string): { data: T; timestamp: number } | null {
+  if (!hasLocalStorage) {
+    return null;
+  }
+
+  const cached = localStorage.getItem(cacheKey);
+  if (!cached) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(cached) as { data: T; timestamp: number };
+  } catch {
+    return null;
+  }
+}
+
+function setStorageCache(cacheKey: string, data: unknown): void {
+  if (!hasLocalStorage) {
+    return;
+  }
+
+  localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -40,44 +67,34 @@ export class WomService {
 
   async getEhbRates(eat: EfficiencyAlgorithmType): Promise<BossMetaConfig[]> {
     const cacheKey = `ehb_${eat}`;
-    const cached = localStorage.getItem(cacheKey);
+    const cached = getStorageCache<BossMetaConfig[]>(cacheKey);
     if (cached) {
-      const parsed = JSON.parse(cached);
-      const ageMs = Date.now() - parsed.timestamp;
+      const ageMs = Date.now() - cached.timestamp;
       const differenceInWeeks = ageMs / (1000 * 60 * 60 * 24 * 7);
       if (differenceInWeeks < 1) {
-        return parsed.data;
-      } else {
-        const rates = await client.efficiency.getEHBRates(eat);
-        localStorage.setItem(cacheKey, JSON.stringify({ data: rates, timestamp: Date.now() }));
-        return rates;
+        return cached.data;
       }
-    } else {
-      const rates = await client.efficiency.getEHBRates(eat);
-      localStorage.setItem(cacheKey, JSON.stringify({ data: rates, timestamp: Date.now() }));
-      return rates;
     }
+
+    const rates = await client.efficiency.getEHBRates(eat);
+    setStorageCache(cacheKey, rates);
+    return rates;
   }
 
   async getEhpRates(eat: EfficiencyAlgorithmType): Promise<SkillMetaConfig[]> {
     const cacheKey = `ehp_${eat}`;
-    const cached = localStorage.getItem(cacheKey);
+    const cached = getStorageCache<SkillMetaConfig[]>(cacheKey);
     if (cached) {
-      const parsed = JSON.parse(cached);
-      const ageMs = Date.now() - parsed.timestamp;
+      const ageMs = Date.now() - cached.timestamp;
       const differenceInWeeks = ageMs / (1000 * 60 * 60 * 24 * 7);
       if (differenceInWeeks < 1) {
-        return parsed.data;
-      } else {
-        const rates = await client.efficiency.getEHPRates(eat);
-        localStorage.setItem(cacheKey, JSON.stringify({ data: rates, timestamp: Date.now() }));
-        return rates;
+        return cached.data;
       }
-    } else {
-      const rates = await client.efficiency.getEHPRates(eat);
-      localStorage.setItem(cacheKey, JSON.stringify({ data: rates, timestamp: Date.now() }));
-      return rates;
     }
+
+    const rates = await client.efficiency.getEHPRates(eat);
+    setStorageCache(cacheKey, rates);
+    return rates;
   }
 
   async getPlayerGroups(playerName: string): Promise<GroupResponse[]> {

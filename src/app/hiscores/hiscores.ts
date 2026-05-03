@@ -41,6 +41,33 @@ export class Hiscores implements OnInit {
 
   private isInitializing = true;
 
+  private isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+  private getCachedData<T>(cacheKey: string): { data: T; timestamp: number } | null {
+    if (!this.isBrowser) {
+      return null;
+    }
+
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(cached) as { data: T; timestamp: number };
+    } catch {
+      return null;
+    }
+  }
+
+  private setCachedData(cacheKey: string, data: unknown, timestamp: number): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp }));
+  }
+
   constructor(
     private activatedRoute: ActivatedRoute,
     private womService: WomService,
@@ -153,13 +180,12 @@ export class Hiscores implements OnInit {
     try {
       for (const metric of Object.values(Metric)) {
         const cacheKey = `hiscore_${playerName}_${groupId}_${metric}`;
-        const cached = localStorage.getItem(cacheKey);
+        const cached = this.getCachedData<Score>(cacheKey);
 
         if (cached) {
-          const parsed = JSON.parse(cached);
           scores.push({
-            score: parsed.data,
-            cacheTimestamp: parsed.timestamp,
+            score: cached.data,
+            cacheTimestamp: cached.timestamp,
             isCached: true,
           });
           this.scores.set([...scores]);
@@ -174,7 +200,7 @@ export class Hiscores implements OnInit {
           cacheTimestamp: timestamp,
           isCached: true,
         });
-        localStorage.setItem(cacheKey, JSON.stringify({ data: score, timestamp }));
+        this.setCachedData(cacheKey, score, timestamp);
         this.scores.set([...scores]);
 
         // Add delay to avoid overloading the API
@@ -226,7 +252,7 @@ export class Hiscores implements OnInit {
 
       const cacheKey = `hiscore_${playerName}_${groupId}_${scoreWithCache.score.metric}`;
       const timestamp = Date.now();
-      localStorage.setItem(cacheKey, JSON.stringify({ data: freshScore, timestamp }));
+      this.setCachedData(cacheKey, freshScore, timestamp);
 
       // Update the score in the list
       const updatedScores = this.scores().map(s =>
