@@ -1,18 +1,23 @@
 <div class="container">
-  <div class="card">
-    <h2>Load Hiscores</h2>
-    
+  <div class="card osrs-panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">OldSchool Hiscores</h2>
+        <p class="panel-subtitle">Search player groups and view their latest hiscores.</p>
+      </div>
+    </div>
+
     <div class="form-group">
-      <label for="playerName">Player Name:</label>
+      <label for="playerName">Player Name</label>
       <div class="input-group">
-        <input 
+        <input
           id="playerName"
-          type="text" 
+          type="text"
           [(ngModel)]="playerName"
           placeholder="Enter player name"
           (keyup.enter)="onPlayerNameSubmit()"
         />
-        <p-button (click)="onPlayerNameSubmit()" [disabled]="isLoadingGroups()">
+        <p-button class="osrs-button" (click)="onPlayerNameSubmit()" [disabled]="isLoadingGroups()">
           {{ isLoadingGroups() ? 'Loading...' : 'Load Groups' }}
         </p-button>
       </div>
@@ -20,72 +25,55 @@
 
     @if(groups().length > 0) {
       <div class="form-group">
-        <label for="groupSelect">Select Group:</label>
-        <p-select 
+        <label for="groupSelect">Select Group</label>
+        <p-select
           id="groupSelect"
-          [(ngModel)]="selectedGroupId" 
+          class="osrs-select"
+          [(ngModel)]="selectedGroupId"
           (onChange)="onGroupSelect()"
           [disabled]="isLoadingHiscores()"
           placeholder="-- Choose a group --"
           [options]="groups()"
           optionLabel="name"
           optionValue="id"
-          ></p-select>
+        ></p-select>
       </div>
     }
 
     @if(isLoadingHiscores()) {
-      <p>Loading hiscores...</p>
+      <p class="loading-text">Loading hiscores...</p>
     }
   </div>
 
   @if(scores().length > 0) {
-    <div class="card">
-      <h3>Bulk Refresh Options</h3>
+    <div class="card osrs-panel">
+      <div class="panel-header compact">
+        <div>
+          <h3 class="panel-title">Refresh Options</h3>
+          <p class="panel-subtitle">Refresh metrics by category or refresh everything at once.</p>
+        </div>
+      </div>
+
       <div class="button-group">
-        <p-button 
-          (click)="refreshAll()"
-          [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)"
-          [loading]="isRefreshingAll()"
-          severity="primary"
-        >
+        <p-button class="osrs-button" (click)="refreshAll()" [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)" [loading]="isRefreshingAll()" severity="primary">
           Refresh All
         </p-button>
-        <p-button 
-          (click)="refreshByMetricType('skill')"
-          [disabled]="isRefreshingSkills() || (refreshingMetrics().size > 0)"
-          [loading]="isRefreshingSkills()"
-          severity="info"
-        >
+        <p-button class="osrs-button" (click)="refreshByMetricType('skill')" [disabled]="isRefreshingSkills() || (refreshingMetrics().size > 0)" [loading]="isRefreshingSkills()" severity="info">
           Refresh Skills
         </p-button>
-        <p-button 
-          (click)="refreshByMetricType('boss')"
-          [disabled]="isRefreshingBosses() || (refreshingMetrics().size > 0)"
-          [loading]="isRefreshingBosses()"
-          severity="info"
-        >
+        <p-button class="osrs-button" (click)="refreshByMetricType('boss')" [disabled]="isRefreshingBosses() || (refreshingMetrics().size > 0)" [loading]="isRefreshingBosses()" severity="info">
           Refresh Bosses
         </p-button>
-        <p-button 
-          (click)="refreshByMetricType('activity')"
-          [disabled]="isRefreshingActivities() || (refreshingMetrics().size > 0)"
-          [loading]="isRefreshingActivities()"
-          severity="info"
-        >
+        <p-button class="osrs-button" (click)="refreshByMetricType('activity')" [disabled]="isRefreshingActivities() || (refreshingMetrics().size > 0)" [loading]="isRefreshingActivities()" severity="info">
           Refresh Activities
         </p-button>
-        <p-button 
-          (click)="refreshByMetricType('computed')"
-          [disabled]="isRefreshingComputedMetrics() || (refreshingMetrics().size > 0)"
-          [loading]="isRefreshingComputedMetrics()"
-          severity="info"
-        >
+        <p-button class="osrs-button" (click)="refreshByMetricType('computed')" [disabled]="isRefreshingComputedMetrics() || (refreshingMetrics().size > 0)" [loading]="isRefreshingComputedMetrics()" severity="info">
           Refresh Computed
         </p-button>
       </div>
       <p-divider />
-      <p-table [value]="scores()" [tableStyle]="{ 'min-width': '50rem' }">
+      <div class="table-scroll">
+        <p-table class="osrs-table" [value]="scores()" [tableStyle]="{ 'min-width': '50rem' }">
         <ng-template #header>
           <tr>
             <th pSortableColumn="score.metric" style="width:15%">
@@ -147,6 +135,7 @@
           </tr>
         </ng-template>
       </p-table>
+      </div>
     </div>
   }
 </div>
