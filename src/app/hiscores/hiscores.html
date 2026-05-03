@@ -123,7 +123,7 @@
         </ng-template>
         <ng-template #body let-scoreWithCache>
           <tr [style.color]="getRankColor(scoreWithCache)">
-            <td>{{ scoreWithCache.score.metric }}{{getUnit(scoreWithCache.score.metric)}}</td>
+            <td>{{ scoreWithCache.score.metric }}</td>
             <td>{{ scoreWithCache.score.ranking }}</td>
             <td>{{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}</td>
             <td>{{ scoreWithCache.score.next.value !== 'N/A' ? `${(scoreWithCache.score.next.value | number:'1.0-0')}${getUnit(scoreWithCache.score.metric)} - ${scoreWithCache.score.next.player}` : 'N/A' }}<br>@if(scoreWithCache.score.next.difference !== 0){(+{{ scoreWithCache.score.next.difference !== 'N/A' ? (scoreWithCache.score.next.difference | number:'1.0-0')+getUnit(scoreWithCache.score.metric) : 'N/A' }})<br>{{ scoreWithCache.score.next.timeToNext !== 'N/A' ? `(+${(scoreWithCache.score.next.timeToNext | number:'1.0-0')}h)` : '' }}}</td>

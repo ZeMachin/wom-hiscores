@@ -204,7 +204,7 @@ export class WomService {
     for (const [key, method] of meta.methods.entries()) {
       const isLastMethod: boolean = key === meta.methods.length - 1;
       if (isLastMethod) {
-        totalTime += (end - method.startExp) / method.rate;
+        totalTime += (end - Math.max(start, method.startExp)) / method.rate;
       } else if (start < method.startExp) {
         const nextMethod = meta.methods[key + 1];
         const effectiveStartExp = Math.max(start, method.startExp);
