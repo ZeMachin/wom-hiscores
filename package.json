@@ -8,7 +8,7 @@
     "config": "ts-node src/environments/set-env.ts",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "build-pages": "ng build --base-href https://zemachin.github.io/wom-hiscores/",
+    "build-pages": "ng build --base-href https://zemachin.github.io/wom-hiscores/ && mv dist/wom-hiscores/browser/* dist/wom-hiscores/ && rmdir dist/wom-hiscores/browser",
     "deploy-pages": "npx angular-cli-ghpages --dir=dist/wom-hiscores"
   },
   "private": true,
