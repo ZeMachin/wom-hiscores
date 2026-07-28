@@ -1,14 +1,9 @@
-import { Component, effect, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { Component, effect, OnInit, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GroupResponse, Metric, Skill, Boss, Activity, ComputedMetric, PlayerDetailsResponse } from '@wise-old-man/utils';
 import { WomService, Score, Goal } from '../services/wom.service';
-import { TableModule } from 'primeng/table';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SelectModule } from 'primeng/select';
-import { ButtonModule } from "primeng/button";
-import { DividerModule } from 'primeng/divider';
-import { TooltipModule } from 'primeng/tooltip';
 
 type ScoreWithCache = {
   score: Score;
@@ -18,7 +13,7 @@ type ScoreWithCache = {
 
 @Component({
   selector: 'app-hiscores',
-  imports: [TableModule, DecimalPipe, FormsModule, SelectModule, ButtonModule, DividerModule, TooltipModule],
+  imports: [DecimalPipe, FormsModule],
   templateUrl: './hiscores.html',
   styleUrl: './hiscores.css',
 })
@@ -170,6 +165,11 @@ export class Hiscores implements OnInit {
     } finally {
       this.isLoadingGroups.set(false);
     }
+  }
+
+  onGroupSelectionChange(value: string | number | null): void {
+    this.selectedGroupId.set(value === '' || value === null ? null : Number(value));
+    void this.onGroupSelect();
   }
 
   async onGroupSelect(): Promise<void> {
