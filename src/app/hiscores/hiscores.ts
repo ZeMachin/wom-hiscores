@@ -298,14 +298,38 @@ export class Hiscores implements OnInit {
 
   getCacheAge(cacheTimestamp: number | null): string | null {
     if (!cacheTimestamp) return null;
-    const ageMs = Date.now() - cacheTimestamp;
-    const ageMinutes = Math.floor(ageMs / 1000 / 60);
-    const ageSeconds = Math.floor((ageMs / 1000) % 60);
 
-    if (ageMinutes > 0) {
-      return `${ageMinutes}m ${ageSeconds}s old`;
+    const ageMs = Date.now() - cacheTimestamp;
+    const totalSeconds = Math.max(0, Math.floor(ageMs / 1000));
+
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const parts: string[] = [];
+
+    if (days > 0) {
+      parts.push(`${days}d`);
     }
-    return `${ageSeconds}s old`;
+
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+
+    if (minutes > 0) {
+      parts.push(`${minutes}m`);
+    }
+
+    if (seconds > 0 || parts.length === 0) {
+      parts.push(`${seconds}s`);
+    }
+
+    if (parts.length > 2) {
+      return `${parts[0]} ${parts[1]} old`;
+    }
+
+    return `${parts.join(' ')} old`;
   }
 
   isRefreshDisabled(cacheTimestamp: number | null): boolean {
