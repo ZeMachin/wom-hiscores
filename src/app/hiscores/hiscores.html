@@ -81,40 +81,40 @@
           <thead>
             <tr>
               <th style="width:15%">
-                <div class="table-header-cell">
-                  Metric
-                  <span class="sort-indicator" aria-hidden="true">↕</span>
-                </div>
+                <button type="button" class="table-sort-button" (click)="sortTable('metric')">
+                  <span>Metric</span>
+                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('metric') }}</span>
+                </button>
               </th>
               <th style="width:15%">
-                <div class="table-header-cell">
-                  Ranking
-                  <span class="sort-indicator" aria-hidden="true">↕</span>
-                </div>
+                <button type="button" class="table-sort-button" (click)="sortTable('ranking')">
+                  <span>Ranking</span>
+                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('ranking') }}</span>
+                </button>
               </th>
               <th style="width:15%">
-                <div class="table-header-cell">
-                  Value
-                  <span class="sort-indicator" aria-hidden="true">↕</span>
-                </div>
+                <button type="button" class="table-sort-button" (click)="sortTable('value')">
+                  <span>Value</span>
+                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('value') }}</span>
+                </button>
               </th>
               <th style="width:15%">
-                <div class="table-header-cell">
-                  Next Step
-                  <span class="sort-indicator" aria-hidden="true">↕</span>
-                </div>
+                <button type="button" class="table-sort-button" (click)="sortTable('next')">
+                  <span>Next</span>
+                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('next') }}</span>
+                </button>
               </th>
               <th style="width:15%">
-                <div class="table-header-cell">
-                  First
-                  <span class="sort-indicator" aria-hidden="true">↕</span>
-                </div>
+                <button type="button" class="table-sort-button" (click)="sortTable('first')">
+                  <span>First</span>
+                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('first') }}</span>
+                </button>
               </th>
               <th style="width:15%">Cache Age</th>
             </tr>
           </thead>
           <tbody>
-            @for (scoreWithCache of scores(); track scoreWithCache.score.metric) {
+            @for (scoreWithCache of visibleScores(); track scoreWithCache.score.metric) {
               <tr>
                 <td>{{ scoreWithCache.score.metric }}</td>
                 <td [style]="{ color: getRankColor(scoreWithCache), borderColor: 'rgb(237, 227, 190)' }">

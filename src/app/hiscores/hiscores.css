@@ -188,10 +188,23 @@ select {
   margin-top: 6px;
 }
 
-.table-header-cell {
+.table-sort-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0;
+  cursor: pointer;
+}
+
+.table-sort-button:hover {
+  color: #fff8df;
 }
 
 .sort-indicator {

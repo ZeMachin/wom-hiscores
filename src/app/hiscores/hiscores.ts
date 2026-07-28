@@ -1,4 +1,4 @@
-import { Component, effect, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupResponse, Metric, Skill, Boss, Activity, ComputedMetric, PlayerDetailsResponse } from '@wise-old-man/utils';
 import { WomService, Score, Goal } from '../services/wom.service';
@@ -10,6 +10,9 @@ type ScoreWithCache = {
   cacheTimestamp: number | null;
   isCached: boolean;
 };
+
+type SortColumn = 'metric' | 'ranking' | 'value' | 'next' | 'first';
+type SortDirection = 'asc' | 'desc';
 
 @Component({
   selector: 'app-hiscores',
@@ -24,6 +27,9 @@ export class Hiscores implements OnInit {
   groups = signal<GroupResponse[]>([]);
   selectedGroupId = signal<number | null>(null);
   scores = signal<ScoreWithCache[]>([]);
+  sortColumn = signal<SortColumn | null>(null);
+  sortDirection = signal<SortDirection>('asc');
+  visibleScores = computed(() => this.getSortedScores(this.scores()));
   isLoadingGroups = signal(false);
   isLoadingHiscores = signal(false);
   refreshingMetrics = signal<Set<string>>(new Set());
@@ -229,6 +235,65 @@ export class Hiscores implements OnInit {
     } finally {
       this.isLoadingHiscores.set(false);
     }
+  }
+
+  sortTable(column: SortColumn): void {
+    if (this.sortColumn() === column) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    this.sortColumn.set(column);
+    this.sortDirection.set('asc');
+  }
+
+  getSortIndicator(column: SortColumn): string {
+    if (this.sortColumn() !== column) {
+      return '↕';
+    }
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
+  }
+
+  private getSortedScores(scoresToSort: ScoreWithCache[]): ScoreWithCache[] {
+    const column = this.sortColumn();
+    if (!column) {
+      return scoresToSort;
+    }
+
+    const direction = this.sortDirection();
+    return [...scoresToSort].sort((left, right) => {
+      const leftValue = this.getSortValue(left, column);
+      const rightValue = this.getSortValue(right, column);
+
+      if (leftValue === rightValue) {
+        return 0;
+      }
+
+      const comparison = leftValue < rightValue ? -1 : 1;
+      return direction === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  private getSortValue(scoreWithCache: ScoreWithCache, column: SortColumn): string | number {
+    switch (column) {
+      case 'metric':
+        return scoreWithCache.score.metric;
+      case 'ranking':
+        return typeof scoreWithCache.score.ranking === 'number' ? scoreWithCache.score.ranking : Number.MAX_SAFE_INTEGER;
+      case 'value':
+        return this.normalizeNumericValue(scoreWithCache.score.value);
+      case 'next':
+        return this.normalizeNumericValue(scoreWithCache.score.next.timeToGoal);
+      case 'first':
+        return this.normalizeNumericValue(scoreWithCache.score.first.timeToGoal);
+      default:
+        return scoreWithCache.score.metric;
+    }
+  }
+
+  private normalizeNumericValue(value: string | number): number {
+    const normalized = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(normalized) ? normalized : Number.MAX_SAFE_INTEGER;
   }
 
   getCacheAge(cacheTimestamp: number | null): string | null {
