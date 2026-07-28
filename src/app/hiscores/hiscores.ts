@@ -9,6 +9,7 @@ type ScoreWithCache = {
   score: Score;
   cacheTimestamp: number | null;
   isCached: boolean;
+  previousRanking: number | 'N/A' | null;
 };
 
 type SortColumn = 'metric' | 'ranking' | 'value' | 'next' | 'first';
@@ -199,6 +200,7 @@ export class Hiscores implements OnInit {
         score,
         cacheTimestamp: timestamp,
         isCached: true,
+        previousRanking: null,
       };
     });
   }
@@ -222,6 +224,7 @@ export class Hiscores implements OnInit {
           score: cached.data,
           cacheTimestamp: cached.timestamp,
           isCached: true,
+          previousRanking: null,
         } : null;
       });
 
@@ -366,6 +369,7 @@ export class Hiscores implements OnInit {
             score: freshScore,
             cacheTimestamp: timestamp,
             isCached: true,
+            previousRanking: typeof s.score.ranking === 'number' ? s.score.ranking : null,
           }
           : s
       );
@@ -401,6 +405,70 @@ export class Hiscores implements OnInit {
     return `hsl(${hue}, 80%, 50%)`;
   }
 
+  getRankingDeltaIcon(scoreWithCache: ScoreWithCache): string {
+    const current = scoreWithCache.score.ranking;
+    const previous = scoreWithCache.previousRanking;
+
+    if (typeof current !== 'number' || typeof previous !== 'number') {
+      return '';
+    }
+
+    if (current < previous) {
+      return '/assets/arrowup.gif';
+    }
+    if (current > previous) {
+      return '/assets/arrowdown.gif';
+    }
+    return '/assets/arrowequal.gif';
+  }
+
+  getRankingDeltaText(scoreWithCache: ScoreWithCache): string {
+    const current = scoreWithCache.score.ranking;
+    const previous = scoreWithCache.previousRanking;
+
+    if (typeof current !== 'number' || typeof previous !== 'number') {
+      return '';
+    }
+
+    const delta = previous - current;
+    if (delta > 0) {
+      return `+${delta}`;
+    }
+    if (delta < 0) {
+      return `${delta}`;
+    }
+    return '0';
+  }
+
+  getRankingDeltaAlt(scoreWithCache: ScoreWithCache): string {
+    const current = scoreWithCache.score.ranking;
+    const previous = scoreWithCache.previousRanking;
+
+    if (typeof current !== 'number' || typeof previous !== 'number') {
+      return '';
+    }
+
+    if (current < previous) {
+      return 'Ranking improved';
+    }
+    if (current > previous) {
+      return 'Ranking worsened';
+    }
+    return 'Ranking unchanged';
+  }
+
+  isRankingImproved(scoreWithCache: ScoreWithCache): boolean {
+    const current = scoreWithCache.score.ranking;
+    const previous = scoreWithCache.previousRanking;
+    return typeof current === 'number' && typeof previous === 'number' && current < previous;
+  }
+
+  isRankingWorsened(scoreWithCache: ScoreWithCache): boolean {
+    const current = scoreWithCache.score.ranking;
+    const previous = scoreWithCache.previousRanking;
+    return typeof current === 'number' && typeof previous === 'number' && current > previous;
+  }
+
   private getMetricType(metric: Metric): 'skill' | 'boss' | 'activity' | 'computed' | null {
     if (Object.values(Skill).includes(metric as Skill)) return 'skill';
     if (Object.values(Boss).includes(metric as Boss)) return 'boss';
@@ -433,10 +501,12 @@ export class Hiscores implements OnInit {
         this.setCachedData(cacheKey, score, timestamp);
 
         this.refreshingMetrics.update(set => new Set(set).add(score.metric));
+        const existing = this.scores().find(s => s.score.metric === score.metric);
         return {
           score,
           cacheTimestamp: timestamp,
           isCached: true,
+          previousRanking: existing && typeof existing.score.ranking === 'number' ? existing.score.ranking : null,
         };
       });
 
@@ -471,10 +541,12 @@ export class Hiscores implements OnInit {
       const updatedScores = freshScores.map(score => {
         const cacheKey = this.getCacheKey(playerName, groupId, score.metric);
         this.setCachedData(cacheKey, score, timestamp);
+        const existing = this.scores().find(s => s.score.metric === score.metric);
         return {
           score,
           cacheTimestamp: timestamp,
           isCached: true,
+          previousRanking: existing && typeof existing.score.ranking === 'number' ? existing.score.ranking : null,
         };
       });
 

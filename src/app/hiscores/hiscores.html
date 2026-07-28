@@ -118,7 +118,27 @@
               <tr>
                 <td>{{ scoreWithCache.score.metric }}</td>
                 <td [style]="{ color: getRankColor(scoreWithCache), borderColor: 'rgb(237, 227, 190)' }">
-                  {{ scoreWithCache.score.ranking }}
+                  <div class="ranking-cell">
+                    <span>{{ scoreWithCache.score.ranking }}</span>
+                    @if (scoreWithCache.previousRanking !== null) {
+                      <span
+                        class="ranking-delta"
+                        [class.improved]="isRankingImproved(scoreWithCache)"
+                        [class.worsened]="isRankingWorsened(scoreWithCache)"
+                        [class.unchanged]="!isRankingImproved(scoreWithCache) && !isRankingWorsened(scoreWithCache)"
+                        title="{{ getRankingDeltaAlt(scoreWithCache) }}"
+                      >
+                        <img
+                          class="ranking-delta-icon"
+                          [src]="getRankingDeltaIcon(scoreWithCache)"
+                          [alt]="getRankingDeltaAlt(scoreWithCache)"
+                          width="16"
+                          height="16"
+                        />
+                        @if(getRankingDeltaText(scoreWithCache) != '0') {<span class="ranking-delta-value">{{ getRankingDeltaText(scoreWithCache) }}</span>}
+                      </span>
+                    }
+                  </div>
                 </td>
                 <td>
                   {{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}

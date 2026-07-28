@@ -216,6 +216,51 @@ select {
   cursor: help;
 }
 
+.ranking-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ranking-delta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 2.25rem;
+  height: 1.75rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  margin-left: 10px;
+  /* background: rgba(255, 255, 255, 0.08); */
+}
+
+.ranking-delta.improved {
+  /* background: rgba(87, 167, 115, 0.16); */
+  color: #b6e3b6;
+}
+
+.ranking-delta.worsened {
+  /* background: rgba(208, 90, 90, 0.16); */
+  color: #e3b6b6;
+}
+
+.ranking-delta.unchanged {
+  /* background: rgba(190, 190, 190, 0.12); */
+}
+
+.ranking-delta-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.ranking-delta-value {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: #f3e4b6;
+}
+
 .cache-cell {
   display: flex;
   flex-direction: row;
