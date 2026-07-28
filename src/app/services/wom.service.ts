@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Skill, WOMClient, GroupResponse, PlayerType, BossMetaConfig, EfficiencyAlgorithmType, SkillMetaConfig, PlayerDetailsResponse, PlayerBuild } from '@wise-old-man/utils';
+import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Skill, WOMClient, GroupResponse, PlayerType, BossMetaConfig, EfficiencyAlgorithmType, SkillMetaConfig, PlayerDetailsResponse, PlayerBuild, SnapshotResponse, PlayerResponse } from '@wise-old-man/utils';
 import { GroupHiscoresSkillData, GroupHiscoresBossData, GroupHiscoresActivityData, GroupHiscoresComputedMetricData } from '../model/group-hiscore-data.model';
 import { environment } from '../../environments/environment';
 
@@ -104,19 +104,104 @@ export class WomService {
     return groups.map((membership) => membership.group);
   }
 
-  async getHiscoreForMetric(groupId: number, metric: Metric, player: PlayerDetailsResponse): Promise<Score> {
+  async getScoresFromBulkHiscores(groupId: number, player: PlayerDetailsResponse): Promise<Score[]> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
 
-    const hiscores = await client.groups.getGroupHiscores(groupId, metric);
+    const bulkHiscores = await this.getBulkHiscores(groupId);
+    const scores: Score[] = [];
+    for (const metric of Object.values(Metric)) {
+      const metricHiscores = this.buildGroupHiscores(metric, bulkHiscores);
+      scores.push(await this.buildScoreForMetric(metric, player, metricHiscores));
+    }
+    return scores;
+  }
 
+  async getHiscoreForMetric(groupId: number, metric: Metric, player: PlayerDetailsResponse): Promise<Score> {
+    return (await this.getScoresFromBulkHiscores(groupId, player)).find(score => score.metric === metric) ?? {
+      metric,
+      ranking: 'N/A',
+      value: 'N/A',
+      first: {
+        value: 'N/A',
+        difference: 'N/A',
+        player: 'N/A',
+        timeToGoal: 'N/A'
+      },
+      next: {
+        value: 'N/A',
+        difference: 'N/A',
+        player: 'N/A',
+        timeToGoal: 'N/A',
+      }
+    };
+  }
+
+  private buildGroupHiscores(metric: Metric, bulkHiscores: Array<{ player: PlayerResponse; data: SnapshotResponse }>): GroupHiscoresEntryResponse[] {
+    const entries: GroupHiscoresEntryResponse[] = bulkHiscores.map(({ player, data: snapshot }) => {
+      if (this.isSkillMetric(metric)) {
+        const skillData = snapshot.data.skills[metric as Skill];
+        return {
+          player,
+          data: {
+            type: 'skill',
+            rank: skillData.rank,
+            level: skillData.level,
+            experience: skillData.experience,
+          } as GroupHiscoresSkillData,
+        };
+      }
+
+      if (this.isBossMetric(metric)) {
+        const bossData = snapshot.data.bosses[metric as Boss];
+        return {
+          player,
+          data: {
+            type: 'boss',
+            rank: bossData.rank,
+            kills: bossData.kills,
+          } as GroupHiscoresBossData,
+        };
+      }
+
+      if (this.isActivityMetric(metric)) {
+        const activityData = snapshot.data.activities[metric as Activity];
+        return {
+          player,
+          data: {
+            type: 'activity',
+            rank: activityData.rank,
+            score: activityData.score,
+          } as GroupHiscoresActivityData,
+        };
+      }
+
+      const computedData = snapshot.data.computed[metric as ComputedMetric];
+      return {
+        player,
+        data: {
+          type: 'computed',
+          rank: computedData.rank,
+          value: computedData.value,
+        } as GroupHiscoresComputedMetricData,
+      };
+    });
+
+    return entries.sort((a, b) => {
+      const aValue = this.getValue(a);
+      const bValue = this.getValue(b);
+      if (typeof aValue !== 'number' || typeof bValue !== 'number') {
+        return 0;
+      }
+      return bValue - aValue;
+    });
+  }
+
+  private async buildScoreForMetric(metric: Metric, player: PlayerDetailsResponse, hiscores: GroupHiscoresEntryResponse[]): Promise<Score> {
     const idx = hiscores.findIndex(h => h.player.displayName === player.displayName);
-
     const ranking = idx + 1 || 'N/A';
 
-    console.log(`${player.displayName} is ranked ${ranking} in the group for ${metric}!`);
-
     if (idx === -1) {
-      console.warn(`Player ${player.displayName} not found in the hiscores for metric ${metric}.`);
+      console.warn(`Player ${player.displayName} not found in the bulk hiscores for metric ${metric}.`);
       return {
         metric,
         ranking,
@@ -134,25 +219,25 @@ export class WomService {
           timeToGoal: 'N/A',
         },
       };
-    } else {
-      return {
-        metric,
-        ranking,
-        value: this.getValue(hiscores[idx]),
-        first: {
-          value: this.getValue(hiscores[0]),
-          difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[0], metric),
-          player: hiscores[0].player.displayName,
-          timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[0], metric, player.build)
-        },
-        next: {
-          value: idx === 0 ? 'N/A' : this.getValue(hiscores[idx - 1]),
-          difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[idx - 1], metric),
-          player: idx === 0 ? '' : hiscores[idx - 1].player.displayName,
-          timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[idx - 1], metric, player.build)
-        }
-      };
     }
+
+    return {
+      metric,
+      ranking,
+      value: this.getValue(hiscores[idx]),
+      first: {
+        value: this.getValue(hiscores[0]),
+        difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[0], metric),
+        player: hiscores[0].player.displayName,
+        timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[0], metric, player.build)
+      },
+      next: {
+        value: idx === 0 ? 'N/A' : this.getValue(hiscores[idx - 1]),
+        difference: idx === 0 ? 0 : this.metricDifference(hiscores[idx], hiscores[idx - 1], metric),
+        player: idx === 0 ? '' : hiscores[idx - 1].player.displayName,
+        timeToGoal: idx === 0 ? 'N/A' : await this.computeTimeBetweenScores(hiscores[idx], hiscores[idx - 1], metric, player.build)
+      }
+    };
   }
 
   async computeTimeBetweenScores(playerHiscore: GroupHiscoresEntryResponse, otherPlayerHiscore: GroupHiscoresEntryResponse, metric: Metric, playerBuild: PlayerBuild): Promise<number | 'N/A'> {
@@ -280,8 +365,11 @@ export class WomService {
     return Object.values(ComputedMetric).includes(metric as ComputedMetric);
   }
 
-  // getBulkHiscores(groupId: number): Promise<GroupHiscoresEntryResponse[]> {
-  //   if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
-  //   return client.groups.getGroupBulkHiscores(groupId);
-  // }
+  getBulkHiscores(groupId: number): Promise<{
+    player: PlayerResponse;
+    data: SnapshotResponse;
+}[]> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
+    return client.groups.getGroupBulkHiscores(groupId);
+  }
 }

@@ -178,8 +178,26 @@ export class Hiscores implements OnInit {
     await this.loadHiscores(this.selectedGroupId()!, this.playerName());
   }
 
+  private getCacheKey(playerName: string, groupId: number, metric: Metric): string {
+    return `hiscore_${playerName}_${groupId}_${metric}`;
+  }
+
+  private async fetchAndCacheAllScores(groupId: number, playerName: string, playerDetails: PlayerDetailsResponse): Promise<ScoreWithCache[]> {
+    const scores = await this.womService.getScoresFromBulkHiscores(groupId, playerDetails);
+    const timestamp = Date.now();
+
+    return scores.map(score => {
+      const cacheKey = this.getCacheKey(playerName, groupId, score.metric);
+      this.setCachedData(cacheKey, score, timestamp);
+      return {
+        score,
+        cacheTimestamp: timestamp,
+        isCached: true,
+      };
+    });
+  }
+
   private async loadHiscores(groupId: number, playerName: string) {
-    const scores: ScoreWithCache[] = [];
     this.scores.set([]);
     this.isLoadingHiscores.set(true);
 
@@ -191,34 +209,23 @@ export class Hiscores implements OnInit {
     const playerDetails: PlayerDetailsResponse = await this.womService.getPlayerDetails(playerName);
     this.playerDetails.set(playerDetails);
     try {
-      for (const metric of Object.values(Metric)) {
-        const cacheKey = `hiscore_${playerName}_${groupId}_${metric}`;
+      const cachedScores = Object.values(Metric).map(metric => {
+        const cacheKey = this.getCacheKey(playerName, groupId, metric);
         const cached = this.getCachedData<Score>(cacheKey);
-
-        if (cached) {
-          scores.push({
-            score: cached.data,
-            cacheTimestamp: cached.timestamp,
-            isCached: true,
-          });
-          this.scores.set([...scores]);
-          continue;
-        }
-
-        // Fetch and cache
-        const score = await this.womService.getHiscoreForMetric(groupId, metric, playerDetails);
-        const timestamp = Date.now();
-        scores.push({
-          score,
-          cacheTimestamp: timestamp,
+        return cached ? {
+          score: cached.data,
+          cacheTimestamp: cached.timestamp,
           isCached: true,
-        });
-        this.setCachedData(cacheKey, score, timestamp);
-        this.scores.set([...scores]);
+        } : null;
+      });
 
-        // Add delay to avoid overloading the API
-        await new Promise(resolve => setTimeout(resolve, 500));
+      if (cachedScores.every(Boolean)) {
+        this.scores.set(cachedScores as ScoreWithCache[]);
+        return;
       }
+
+      const fullScores = await this.fetchAndCacheAllScores(groupId, playerName, playerDetails);
+      this.scores.set(fullScores);
     } finally {
       this.isLoadingHiscores.set(false);
     }
@@ -257,17 +264,13 @@ export class Hiscores implements OnInit {
         await this.getPlayerDetails(playerName);
       }
 
-      const freshScore = await this.womService.getHiscoreForMetric(
-        groupId,
-        scoreWithCache.score.metric,
-        this.playerDetails()!
-      );
+      const freshScores = await this.womService.getScoresFromBulkHiscores(groupId, this.playerDetails()!);
+      const freshScore = freshScores.find(score => score.metric === metricKey) ?? scoreWithCache.score;
 
-      const cacheKey = `hiscore_${playerName}_${groupId}_${scoreWithCache.score.metric}`;
+      const cacheKey = this.getCacheKey(playerName, groupId, scoreWithCache.score.metric);
       const timestamp = Date.now();
       this.setCachedData(cacheKey, freshScore, timestamp);
 
-      // Update the score in the list
       const updatedScores = this.scores().map(s =>
         s.score.metric === metricKey
           ? {
@@ -330,45 +333,27 @@ export class Hiscores implements OnInit {
     this.isRefreshingAll.set(true);
 
     try {
-      const scoresToRefresh = this.scores();
-      const updatedScores: ScoreWithCache[] = [];
-
-      for (const scoreWithCache of scoresToRefresh) {
-        this.refreshingMetrics.update(set => new Set(set).add(scoreWithCache.score.metric));
-
-        if (!this.playerDetails()) {
-          await this.getPlayerDetails(playerName);
-        }
-
-        try {
-          const freshScore = await this.womService.getHiscoreForMetric(
-            groupId,
-            scoreWithCache.score.metric,
-            this.playerDetails()!
-          );
-
-          const cacheKey = `hiscore_${playerName}_${groupId}_${scoreWithCache.score.metric}`;
-          const timestamp = Date.now();
-          localStorage.setItem(cacheKey, JSON.stringify({ data: freshScore, timestamp }));
-
-          updatedScores.push({
-            score: freshScore,
-            cacheTimestamp: timestamp,
-            isCached: true,
-          });
-
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } finally {
-          this.refreshingMetrics.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(scoreWithCache.score.metric);
-            return newSet;
-          });
-        }
+      if (!this.playerDetails()) {
+        await this.getPlayerDetails(playerName);
       }
+
+      const freshScores = await this.womService.getScoresFromBulkHiscores(groupId, this.playerDetails()!);
+      const timestamp = Date.now();
+      const updatedScores = freshScores.map(score => {
+        const cacheKey = this.getCacheKey(playerName, groupId, score.metric);
+        this.setCachedData(cacheKey, score, timestamp);
+
+        this.refreshingMetrics.update(set => new Set(set).add(score.metric));
+        return {
+          score,
+          cacheTimestamp: timestamp,
+          isCached: true,
+        };
+      });
 
       this.scores.set(updatedScores);
     } finally {
+      this.refreshingMetrics.set(new Set());
       this.isRefreshingAll.set(false);
     }
   }
@@ -388,47 +373,32 @@ export class Hiscores implements OnInit {
     loadingSignal.set(true);
 
     try {
-      const scoresToRefresh = this.getScoresByMetricType(metricType);
-      const updatedScores: ScoreWithCache[] = [];
-
-      for (const scoreWithCache of scoresToRefresh) {
-        this.refreshingMetrics.update(set => new Set(set).add(scoreWithCache.score.metric));
-
-        if (!this.playerDetails()) {
-          await this.getPlayerDetails(playerName);
-        }
-
-        try {
-          const freshScore = await this.womService.getHiscoreForMetric(
-            groupId,
-            scoreWithCache.score.metric,
-            this.playerDetails()!
-          );
-
-          const cacheKey = `hiscore_${playerName}_${groupId}_${scoreWithCache.score.metric}`;
-          const timestamp = Date.now();
-          localStorage.setItem(cacheKey, JSON.stringify({ data: freshScore, timestamp }));
-
-          updatedScores.push({
-            score: freshScore,
-            cacheTimestamp: timestamp,
-            isCached: true,
-          });
-
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } finally {
-          this.refreshingMetrics.update(set => {
-            const newSet = new Set(set);
-            newSet.delete(scoreWithCache.score.metric);
-            return newSet;
-          });
-        }
+      if (!this.playerDetails()) {
+        await this.getPlayerDetails(playerName);
       }
 
-      // Merge with existing scores
+      const freshScores = await this.womService.getScoresFromBulkHiscores(groupId, this.playerDetails()!);
+      const timestamp = Date.now();
+      const updatedScores = freshScores.map(score => {
+        const cacheKey = this.getCacheKey(playerName, groupId, score.metric);
+        this.setCachedData(cacheKey, score, timestamp);
+        return {
+          score,
+          cacheTimestamp: timestamp,
+          isCached: true,
+        };
+      });
+
+      const refreshedMetrics = updatedScores
+        .filter(s => this.getMetricType(s.score.metric) === metricType)
+        .map(s => s.score.metric);
+
+      refreshedMetrics.forEach(metric => {
+        this.refreshingMetrics.update(set => new Set(set).add(metric));
+      });
+
       const allScores = this.scores().map(s => {
-        const metricTypeOfScore = this.getMetricType(s.score.metric);
-        if (metricTypeOfScore === metricType) {
+        if (this.getMetricType(s.score.metric) === metricType) {
           const updated = updatedScores.find(u => u.score.metric === s.score.metric);
           return updated || s;
         }
@@ -437,6 +407,7 @@ export class Hiscores implements OnInit {
 
       this.scores.set(allScores);
     } finally {
+      this.refreshingMetrics.set(new Set());
       loadingSignal.set(false);
     }
   }
