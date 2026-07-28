@@ -14,9 +14,9 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "baseUrl": "./",
+    // "baseUrl": "./",
     "paths": {
-      "zone.js/node": ["node_modules/zone.js/dist/zone-node.js"]
+      "zone.js/node": ["./node_modules/zone.js/dist/zone-node.js"]
     }
   },
   "angularCompilerOptions": {

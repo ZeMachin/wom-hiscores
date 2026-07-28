@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Skill, WOMClient, GroupResponse, PlayerType, BossMetaConfig, EfficiencyAlgorithmType, SkillMetaConfig, PlayerDetailsResponse, PlayerBuild } from '@wise-old-man/utils';
 import { GroupHiscoresSkillData, GroupHiscoresBossData, GroupHiscoresActivityData, GroupHiscoresComputedMetricData } from '../model/group-hiscore-data.model';
-import { environment } from 'src/environments/environment';
+import { environment } from '../../environments/environment';
 
 const API_KEY = environment.API_KEY;
 const userAgent = environment.agentName;
@@ -104,19 +104,12 @@ export class WomService {
     return groups.map((membership) => membership.group);
   }
 
-  async getHiscoreForMetric(groupId: number, metric: Metric, player: PlayerDetailsResponse, limit = 25): Promise<Score> {
+  async getHiscoreForMetric(groupId: number, metric: Metric, player: PlayerDetailsResponse): Promise<Score> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
 
-    const hiscores = await client.groups.getGroupHiscores(groupId, metric, { limit });
+    const hiscores = await client.groups.getGroupHiscores(groupId, metric);
 
     const idx = hiscores.findIndex(h => h.player.displayName === player.displayName);
-
-    // Retry with extended limit if player not found
-    if (idx === -1 && limit < 500) {
-      const newLimit = Math.min(limit * 2, 500);
-      console.log(`Player not found with limit ${limit}, retrying with limit ${newLimit}...`);
-      return this.getHiscoreForMetric(groupId, metric, player, newLimit);
-    }
 
     const ranking = idx + 1 || 'N/A';
 
@@ -286,4 +279,9 @@ export class WomService {
   isComputedMetric(metric: Metric): boolean {
     return Object.values(ComputedMetric).includes(metric as ComputedMetric);
   }
+
+  // getBulkHiscores(groupId: number): Promise<GroupHiscoresEntryResponse[]> {
+  //   if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
+  //   return client.groups.getGroupBulkHiscores(groupId);
+  // }
 }
