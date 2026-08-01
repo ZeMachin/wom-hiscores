@@ -119,7 +119,7 @@
                 <td>{{ scoreWithCache.score.metric }}</td>
                 <td [style]="{ color: getRankColor(scoreWithCache), borderColor: 'rgb(237, 227, 190)' }">
                   <div class="ranking-cell">
-                    <span>{{ scoreWithCache.score.ranking }}</span>
+                    <span class="ranking-value">{{ scoreWithCache.score.ranking }}</span>
                     @if (scoreWithCache.previousRanking !== null) {
                       <span
                         class="ranking-delta"

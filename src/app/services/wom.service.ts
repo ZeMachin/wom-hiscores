@@ -3,8 +3,8 @@ import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Ski
 import { GroupHiscoresSkillData, GroupHiscoresBossData, GroupHiscoresActivityData, GroupHiscoresComputedMetricData } from '../model/group-hiscore-data.model';
 import { environment } from '../../environments/environment';
 
-const API_KEY = environment.API_KEY;
-const userAgent = environment.agentName;
+// const API_KEY = environment.API_KEY;
+// const userAgent = environment.agentName;
 
 export type Score = {
   metric: Metric;
@@ -22,8 +22,8 @@ export type Goal = {
 };
 
 const client = new WOMClient({
-  apiKey: API_KEY,
-  userAgent
+  // apiKey: API_KEY,
+  // userAgent
 });
 
 const hasLocalStorage = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
