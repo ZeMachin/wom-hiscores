@@ -1,9 +1,10 @@
-import { Component, computed, effect, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, Inject, OnInit, Optional, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupResponse, Metric, Skill, Boss, Activity, ComputedMetric, PlayerDetailsResponse } from '@wise-old-man/utils';
 import { WomService, Score, Goal } from '../services/wom.service';
-import { DecimalPipe } from '@angular/common';
+import { APP_BASE_HREF, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../environments/environment';
 
 type ScoreWithCache = {
   score: Score;
@@ -40,6 +41,8 @@ export class Hiscores implements OnInit {
   isRefreshingActivities = signal(false);
   isRefreshingComputedMetrics = signal(false);
 
+  readonly appVersion = environment.appVersion;
+
   readonly title = signal('wom-hiscores');
 
   private isInitializing = true;
@@ -74,7 +77,8 @@ export class Hiscores implements OnInit {
   constructor(
     private activatedRoute: ActivatedRoute,
     private womService: WomService,
-    private router: Router
+    private router: Router,
+    @Optional() @Inject(APP_BASE_HREF) private baseHref: string | null = null
   ) {
     // Update URL whenever playerName or selectedGroupId changes
     effect(() => {
@@ -405,6 +409,15 @@ export class Hiscores implements OnInit {
     return `hsl(${hue}, 80%, 50%)`;
   }
 
+  private getAssetUrl(assetFile: string): string {
+    if (!this.baseHref || this.baseHref === '/') {
+      return `/assets/${assetFile}`;
+    }
+
+    const normalizedBaseHref = this.baseHref.endsWith('/') ? this.baseHref : `${this.baseHref}/`;
+    return `${normalizedBaseHref}assets/${assetFile}`;
+  }
+
   getRankingDeltaIcon(scoreWithCache: ScoreWithCache): string {
     const current = scoreWithCache.score.ranking;
     const previous = scoreWithCache.previousRanking;
@@ -414,12 +427,12 @@ export class Hiscores implements OnInit {
     }
 
     if (current < previous) {
-      return '/assets/arrowup.gif';
+      return this.getAssetUrl('arrowup.gif');
     }
     if (current > previous) {
-      return '/assets/arrowdown.gif';
+      return this.getAssetUrl('arrowdown.gif');
     }
-    return '/assets/arrowequal.gif';
+    return this.getAssetUrl('arrowequal.gif');
   }
 
   getRankingDeltaText(scoreWithCache: ScoreWithCache): string {

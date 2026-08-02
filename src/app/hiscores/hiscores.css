@@ -297,6 +297,27 @@ select {
   margin: 24px 0;
 }
 
+.badge-container {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row-reverse;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.version-badge {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  pointer-events: none;
+  user-select: none;
+  width:fit-content;
+  z-index: 2;
+}
+
 @media (max-width: 900px) {
   .button-group,
   .input-group {

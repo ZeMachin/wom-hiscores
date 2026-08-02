@@ -1,5 +1,5 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router, RouterOutlet, RouterLinkWithHref } from "@angular/router";
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterOutlet } from "@angular/router";
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet],

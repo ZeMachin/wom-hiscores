@@ -10,14 +10,8 @@
     <div class="form-group">
       <label for="playerName">Player Name</label>
       <div class="input-group">
-        <input
-          id="playerName"
-          type="text"
-          [ngModel]="playerName()"
-          (ngModelChange)="playerName.set($event)"
-          placeholder="Enter player name"
-          (keyup.enter)="onPlayerNameSubmit()"
-        />
+        <input id="playerName" type="text" [ngModel]="playerName()" (ngModelChange)="playerName.set($event)"
+          placeholder="Enter player name" (keyup.enter)="onPlayerNameSubmit()" />
         <button type="button" class="osrs-button" (click)="onPlayerNameSubmit()" [disabled]="isLoadingGroups()">
           {{ isLoadingGroups() ? 'Loading...' : 'Load Groups' }}
         </button>
@@ -25,154 +19,149 @@
     </div>
 
     @if (groups().length > 0) {
-      <div class="form-group">
-        <label for="groupSelect">Select Group</label>
-        <select
-          id="groupSelect"
-          class="osrs-select"
-          [ngModel]="selectedGroupId()"
-          (ngModelChange)="onGroupSelectionChange($event)"
-          [disabled]="isLoadingHiscores()"
-        >
-          <option value="">-- Choose a group --</option>
-          @for (group of groups(); track group.id) {
-            <option [ngValue]="group.id">{{ group.name }}</option>
-          }
-        </select>
-      </div>
+    <div class="form-group">
+      <label for="groupSelect">Select Group</label>
+      <select id="groupSelect" class="osrs-select" [ngModel]="selectedGroupId()"
+        (ngModelChange)="onGroupSelectionChange($event)" [disabled]="isLoadingHiscores()">
+        <option value="">-- Choose a group --</option>
+        @for (group of groups(); track group.id) {
+        <option [ngValue]="group.id">{{ group.name }}</option>
+        }
+      </select>
+    </div>
     }
 
     @if (isLoadingHiscores()) {
-      <p class="loading-text">Loading hiscores...</p>
+    <p class="loading-text">Loading hiscores...</p>
     }
   </div>
 
   @if (scores().length > 0) {
-    <div class="card osrs-panel">
-      <div class="panel-header compact">
-        <div>
-          <h3 class="panel-title">Refresh Options</h3>
-          <p class="panel-subtitle">Refresh metrics by category or refresh everything at once.</p>
-        </div>
-      </div>
-
-      <div class="button-group">
-        <button type="button" class="osrs-button" (click)="refreshAll()" [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)">
-          Refresh All
-        </button>
-        <button type="button" class="osrs-button" (click)="refreshByMetricType('skill')" [disabled]="isRefreshingSkills() || (refreshingMetrics().size > 0)">
-          Refresh Skills
-        </button>
-        <button type="button" class="osrs-button" (click)="refreshByMetricType('boss')" [disabled]="isRefreshingBosses() || (refreshingMetrics().size > 0)">
-          Refresh Bosses
-        </button>
-        <button type="button" class="osrs-button" (click)="refreshByMetricType('activity')" [disabled]="isRefreshingActivities() || (refreshingMetrics().size > 0)">
-          Refresh Activities
-        </button>
-        <button type="button" class="osrs-button" (click)="refreshByMetricType('computed')" [disabled]="isRefreshingComputedMetrics() || (refreshingMetrics().size > 0)">
-          Refresh Computed
-        </button>
-      </div>
-
-      <hr class="divider" />
-
-      <div class="table-scroll">
-        <table class="osrs-table">
-          <thead>
-            <tr>
-              <th style="width:15%">
-                <button type="button" class="table-sort-button" (click)="sortTable('metric')">
-                  <span>Metric</span>
-                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('metric') }}</span>
-                </button>
-              </th>
-              <th style="width:15%">
-                <button type="button" class="table-sort-button" (click)="sortTable('ranking')">
-                  <span>Ranking</span>
-                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('ranking') }}</span>
-                </button>
-              </th>
-              <th style="width:15%">
-                <button type="button" class="table-sort-button" (click)="sortTable('value')">
-                  <span>Value</span>
-                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('value') }}</span>
-                </button>
-              </th>
-              <th style="width:15%">
-                <button type="button" class="table-sort-button" (click)="sortTable('next')">
-                  <span>Next</span>
-                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('next') }}</span>
-                </button>
-              </th>
-              <th style="width:15%">
-                <button type="button" class="table-sort-button" (click)="sortTable('first')">
-                  <span>First</span>
-                  <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('first') }}</span>
-                </button>
-              </th>
-              <th style="width:15%">Cache Age</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (scoreWithCache of visibleScores(); track scoreWithCache.score.metric) {
-              <tr>
-                <td>{{ scoreWithCache.score.metric }}</td>
-                <td [style]="{ color: getRankColor(scoreWithCache), borderColor: 'rgb(237, 227, 190)' }">
-                  <div class="ranking-cell">
-                    <span class="ranking-value">{{ scoreWithCache.score.ranking }}</span>
-                    @if (scoreWithCache.previousRanking !== null) {
-                      <span
-                        class="ranking-delta"
-                        [class.improved]="isRankingImproved(scoreWithCache)"
-                        [class.worsened]="isRankingWorsened(scoreWithCache)"
-                        [class.unchanged]="!isRankingImproved(scoreWithCache) && !isRankingWorsened(scoreWithCache)"
-                        title="{{ getRankingDeltaAlt(scoreWithCache) }}"
-                      >
-                        <img
-                          class="ranking-delta-icon"
-                          [src]="getRankingDeltaIcon(scoreWithCache)"
-                          [alt]="getRankingDeltaAlt(scoreWithCache)"
-                          width="16"
-                          height="16"
-                        />
-                        @if(getRankingDeltaText(scoreWithCache) != '0') {<span class="ranking-delta-value">{{ getRankingDeltaText(scoreWithCache) }}</span>}
-                      </span>
-                    }
-                  </div>
-                </td>
-                <td>
-                  {{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}
-                </td>
-                <td>
-                  <div class="table-cell-tooltip" [title]="getToolTip(scoreWithCache.score.next, scoreWithCache.score)">
-                    {{ scoreWithCache.score.next.value !== 'N/A' ? (scoreWithCache.score.next.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}
-                  </div>
-                </td>
-                <td>
-                  <div class="table-cell-tooltip" [title]="getToolTip(scoreWithCache.score.first, scoreWithCache.score)">
-                    {{ scoreWithCache.score.first.value !== 'N/A' ? (scoreWithCache.score.first.value | number:'1.0-0') + getUnit(scoreWithCache.score.metric) : 'N/A' }}
-                  </div>
-                </td>
-                <td>
-                  <div class="cache-cell">
-                    @if (scoreWithCache.isCached && scoreWithCache.cacheTimestamp) {
-                      <span class="text-sm">{{ getCacheAge(scoreWithCache.cacheTimestamp) }}</span>
-                      <button
-                        type="button"
-                        class="osrs-button small-button"
-                        (click)="refreshScore(scoreWithCache)"
-                        [disabled]="isRefreshDisabled(scoreWithCache.cacheTimestamp) || refreshingMetrics().has(scoreWithCache.score.metric)"
-                      >
-                        Refresh
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+  <div class="card osrs-panel">
+    <div class="panel-header compact">
+      <div>
+        <h3 class="panel-title">Refresh Options</h3>
+        <p class="panel-subtitle">Refresh metrics by category or refresh everything at once.</p>
       </div>
     </div>
+
+    <div class="button-group">
+      <button type="button" class="osrs-button" (click)="refreshAll()"
+        [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)">
+        Refresh All
+      </button>
+      <button type="button" class="osrs-button" (click)="refreshByMetricType('skill')"
+        [disabled]="isRefreshingSkills() || (refreshingMetrics().size > 0)">
+        Refresh Skills
+      </button>
+      <button type="button" class="osrs-button" (click)="refreshByMetricType('boss')"
+        [disabled]="isRefreshingBosses() || (refreshingMetrics().size > 0)">
+        Refresh Bosses
+      </button>
+      <button type="button" class="osrs-button" (click)="refreshByMetricType('activity')"
+        [disabled]="isRefreshingActivities() || (refreshingMetrics().size > 0)">
+        Refresh Activities
+      </button>
+      <button type="button" class="osrs-button" (click)="refreshByMetricType('computed')"
+        [disabled]="isRefreshingComputedMetrics() || (refreshingMetrics().size > 0)">
+        Refresh Computed
+      </button>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="table-scroll">
+      <table class="osrs-table">
+        <thead>
+          <tr>
+            <th style="width:15%">
+              <button type="button" class="table-sort-button" (click)="sortTable('metric')">
+                <span>Metric</span>
+                <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('metric') }}</span>
+              </button>
+            </th>
+            <th style="width:15%">
+              <button type="button" class="table-sort-button" (click)="sortTable('ranking')">
+                <span>Ranking</span>
+                <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('ranking') }}</span>
+              </button>
+            </th>
+            <th style="width:15%">
+              <button type="button" class="table-sort-button" (click)="sortTable('value')">
+                <span>Value</span>
+                <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('value') }}</span>
+              </button>
+            </th>
+            <th style="width:15%">
+              <button type="button" class="table-sort-button" (click)="sortTable('next')">
+                <span>Next</span>
+                <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('next') }}</span>
+              </button>
+            </th>
+            <th style="width:15%">
+              <button type="button" class="table-sort-button" (click)="sortTable('first')">
+                <span>First</span>
+                <span class="sort-indicator" aria-hidden="true">{{ getSortIndicator('first') }}</span>
+              </button>
+            </th>
+            <th style="width:15%">Cache Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (scoreWithCache of visibleScores(); track scoreWithCache.score.metric) {
+          <tr>
+            <td>{{ scoreWithCache.score.metric }}</td>
+            <td [style]="{ color: getRankColor(scoreWithCache), borderColor: 'rgb(237, 227, 190)' }">
+              <div class="ranking-cell">
+                <span class="ranking-value">{{ scoreWithCache.score.ranking }}</span>
+                @if (scoreWithCache.previousRanking !== null) {
+                <span class="ranking-delta" [class.improved]="isRankingImproved(scoreWithCache)"
+                  [class.worsened]="isRankingWorsened(scoreWithCache)"
+                  [class.unchanged]="!isRankingImproved(scoreWithCache) && !isRankingWorsened(scoreWithCache)"
+                  title="{{ getRankingDeltaAlt(scoreWithCache) }}">
+                  <img class="ranking-delta-icon" [src]="getRankingDeltaIcon(scoreWithCache)"
+                    [alt]="getRankingDeltaAlt(scoreWithCache)" width="16" height="16" />
+                  @if(getRankingDeltaText(scoreWithCache) != '0') {<span class="ranking-delta-value">{{
+                    getRankingDeltaText(scoreWithCache) }}</span>}
+                </span>
+                }
+              </div>
+            </td>
+            <td>
+              {{ scoreWithCache.score.value !== 'N/A' ? (scoreWithCache.score.value | number:'1.0-0') +
+              getUnit(scoreWithCache.score.metric) : 'N/A' }}
+            </td>
+            <td>
+              <div class="table-cell-tooltip" [title]="getToolTip(scoreWithCache.score.next, scoreWithCache.score)">
+                {{ scoreWithCache.score.next.value !== 'N/A' ? (scoreWithCache.score.next.value | number:'1.0-0') +
+                getUnit(scoreWithCache.score.metric) : 'N/A' }}
+              </div>
+            </td>
+            <td>
+              <div class="table-cell-tooltip" [title]="getToolTip(scoreWithCache.score.first, scoreWithCache.score)">
+                {{ scoreWithCache.score.first.value !== 'N/A' ? (scoreWithCache.score.first.value | number:'1.0-0') +
+                getUnit(scoreWithCache.score.metric) : 'N/A' }}
+              </div>
+            </td>
+            <td>
+              <div class="cache-cell">
+                @if (scoreWithCache.isCached && scoreWithCache.cacheTimestamp) {
+                <span class="text-sm">{{ getCacheAge(scoreWithCache.cacheTimestamp) }}</span>
+                <button type="button" class="osrs-button small-button" (click)="refreshScore(scoreWithCache)"
+                  [disabled]="isRefreshDisabled(scoreWithCache.cacheTimestamp) || refreshingMetrics().has(scoreWithCache.score.metric)">
+                  Refresh
+                </button>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
   }
+  <div class="badge-container">
+    <div class="version-badge" aria-label="Application version">v{{ appVersion }}</div>
+  </div>
 </div>

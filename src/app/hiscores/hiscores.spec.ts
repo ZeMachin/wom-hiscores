@@ -7,6 +7,15 @@ describe('Hiscores.getCacheAge', () => {
     component = new Hiscores({} as any, {} as any, { url: '' } as any);
   });
 
+  it('uses the app base href for ranking delta assets', () => {
+    const componentWithBaseHref = new Hiscores({} as any, {} as any, { url: '' } as any, '/wom-hiscores/');
+
+    expect(componentWithBaseHref.getRankingDeltaIcon({
+      score: { ranking: 13 } as any,
+      previousRanking: 10,
+    } as any)).toBe('/wom-hiscores/assets/arrowdown.gif');
+  });
+
   it('shows days and hours when the cache is older than a day', () => {
     spyOn(Date, 'now').and.returnValue(1_700_000_000_000);
     const timestamp = 1_700_000_000_000 - (25 * 60 * 60 * 1000 + 30 * 60 * 1000);
