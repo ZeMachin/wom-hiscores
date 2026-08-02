@@ -2,7 +2,7 @@ import { Component, computed, effect, Inject, OnInit, Optional, signal } from '@
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupResponse, Metric, Skill, Boss, Activity, ComputedMetric, PlayerDetailsResponse } from '@wise-old-man/utils';
 import { WomService, Score, Goal } from '../services/wom.service';
-import { APP_BASE_HREF, DecimalPipe } from '@angular/common';
+import { DecimalPipe, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../environments/environment';
 
@@ -78,7 +78,7 @@ export class Hiscores implements OnInit {
     private activatedRoute: ActivatedRoute,
     private womService: WomService,
     private router: Router,
-    @Optional() @Inject(APP_BASE_HREF) private baseHref: string | null = null
+    @Optional() @Inject(DOCUMENT) private document: Document | null = null
   ) {
     // Update URL whenever playerName or selectedGroupId changes
     effect(() => {
@@ -410,12 +410,11 @@ export class Hiscores implements OnInit {
   }
 
   private getAssetUrl(assetFile: string): string {
-    if (!this.baseHref || this.baseHref === '/') {
-      return `/assets/${assetFile}`;
+    if (this.document) {
+      return new URL(`assets/${assetFile}`, this.document.baseURI).toString();
     }
 
-    const normalizedBaseHref = this.baseHref.endsWith('/') ? this.baseHref : `${this.baseHref}/`;
-    return `${normalizedBaseHref}assets/${assetFile}`;
+    return `/assets/${assetFile}`;
   }
 
   getRankingDeltaIcon(scoreWithCache: ScoreWithCache): string {
