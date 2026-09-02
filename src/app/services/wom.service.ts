@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Skill, WOMClient, GroupResponse, PlayerType, BossMetaConfig, EfficiencyAlgorithmType, SkillMetaConfig, PlayerDetailsResponse, PlayerBuild, SnapshotResponse, PlayerResponse } from '@wise-old-man/utils';
+import { Activity, Boss, ComputedMetric, GroupHiscoresEntryResponse, Metric, Skill, WOMClient, GroupResponse, PlayerType, BossMetaConfig, EfficiencyAlgorithmType, SkillMetaConfig, PlayerDetailsResponse, PlayerBuild, SnapshotResponse, PlayerResponse, GenericCountMessageResponse } from '@wise-old-man/utils';
 import { GroupHiscoresSkillData, GroupHiscoresBossData, GroupHiscoresActivityData, GroupHiscoresComputedMetricData } from '../model/group-hiscore-data.model';
 import { environment } from '../../environments/environment';
 
@@ -371,5 +371,15 @@ export class WomService {
 }[]> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     return client.groups.getGroupBulkHiscores(groupId);
+  }
+  
+  updateGroup(groupId: number, verificationCode: string): Promise<GenericCountMessageResponse> {    
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
+    return client.groups.updateAll(groupId, verificationCode);
+  }
+
+  updatePlayer(playerName: string): Promise<PlayerDetailsResponse> {
+    if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
+    return client.players.updatePlayer(playerName);
   }
 }

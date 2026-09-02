@@ -36,6 +36,22 @@ export class Hiscores implements OnInit {
   isLoadingHiscores = signal(false);
   refreshingMetrics = signal<Set<string>>(new Set());
   isRefreshingAll = signal(false);
+  isUpdatingAllGroupMembers = signal(false);
+  showUpdateDialog = signal(false);
+  verificationCode = signal('');
+  toasts = signal<Array<{ id: number; text: string; closing?: boolean }>>([]);
+  readonly maxVisibleToasts = 3;
+  visibleToasts = computed(() => {
+    const all = this.toasts();
+    return all.slice(-this.maxVisibleToasts);
+  });
+
+  // Update progress signals for individual updates
+  updateTotal = signal(0);
+  updateCurrentIndex = signal(0);
+  updateCurrentName = signal('');
+  updateSuccessCount = signal(0);
+  updateFailureCount = signal(0);
   isRefreshingSkills = signal(false);
   isRefreshingBosses = signal(false);
   isRefreshingActivities = signal(false);
@@ -107,13 +123,13 @@ export class Hiscores implements OnInit {
         // console.log('router url:', routerUrl, 'targetUrl:', targetUrl);
         if (name && groupId) {
           // console.log(`Navigating to hiscores for player "${name}" and group ID ${groupId}...`);
-          this.router.navigate(['hiscores', name, groupId]);
+          this.router.navigateByUrl(`/hiscores/${encodeURIComponent(name)}/${groupId}`);
         } else if (name) {
           // console.log(`Navigating to hiscores for player "${name}"...`);
-          this.router.navigate(['hiscores', name]);
+          this.router.navigateByUrl(`/hiscores/${encodeURIComponent(name)}`);
         } else {
           // console.log('Navigating to hiscores main page...');
-          this.router.navigate(['hiscores']);
+          this.router.navigateByUrl('/hiscores');
         }
       }
     });
@@ -600,5 +616,123 @@ export class Hiscores implements OnInit {
       string += `\n(${new Intl.NumberFormat(navigator.language, { style: 'unit', unit: 'hour', maximumFractionDigits: 0 }).format(goal.timeToGoal)})`;
     }
     return string;
+  }
+
+  onUpdateAllGroupMembersClick(): void {
+    if (!this.selectedGroupId()) {
+      this.addToast('Please select a group before updating members.');
+      return;
+    }
+    this.showUpdateDialog.set(true);
+  }
+
+  closeUpdateDialog(): void {
+    this.showUpdateDialog.set(false);
+  }
+
+  private addToast(text: string): void {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const current = [...this.toasts()];
+    current.push({ id, text, closing: false });
+    this.toasts.set(current);
+
+    // Start closing animation after 4600ms, then remove after animation (220ms)
+    const closeDelay = 4600;
+    const removeDelay = closeDelay + 240;
+    setTimeout(() => this.initiateRemoveToast(id), closeDelay);
+    setTimeout(() => {
+      this.toasts.set(this.toasts().filter(t => t.id !== id));
+    }, removeDelay);
+  }
+
+  removeToast(id: number): void {
+    this.initiateRemoveToast(id);
+  }
+
+  private initiateRemoveToast(id: number): void {
+    // mark as closing to trigger fade-out animation
+    const current = this.toasts();
+    if (!current.find(t => t.id === id)) return;
+    this.toasts.set(current.map(t => (t.id === id ? { ...t, closing: true } : t)));
+    // ensure removal after animation in case caller didn't schedule it
+    setTimeout(() => {
+      this.toasts.set(this.toasts().filter(t => t.id !== id));
+    }, 300);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async startGroupUpdate(): Promise<void> {
+    const groupId = this.selectedGroupId();
+    if (!groupId) {
+      this.addToast('No group selected.');
+      return;
+    }
+    const verification = this.verificationCode();
+    this.closeUpdateDialog();
+    this.isUpdatingAllGroupMembers.set(true);
+    try {
+      const result = await this.womService.updateGroup(groupId, verification);
+      // show server response
+      const message = (result as any)?.message ?? (result as any)?.count ?? JSON.stringify(result);
+      this.addToast(`Group update requested: ${message}`);
+      // refresh local scores after a short delay to allow server to process
+      await this.sleep(1000);
+      await this.refreshAll();
+    } catch (err: any) {
+      this.addToast(`Group update failed: ${err?.message ?? err}`);
+    } finally {
+      this.isUpdatingAllGroupMembers.set(false);
+    }
+  }
+
+  async startIndividualUpdate(): Promise<void> {
+    const groupId = this.selectedGroupId();
+    const playerName = this.playerName();
+    if (!groupId || !playerName) {
+      this.addToast('Select a group and player before updating members.');
+      return;
+    }
+    this.closeUpdateDialog();
+    this.isUpdatingAllGroupMembers.set(true);
+    this.updateTotal.set(0);
+    this.updateCurrentIndex.set(0);
+    this.updateCurrentName.set('');
+    this.updateSuccessCount.set(0);
+    this.updateFailureCount.set(0);
+
+    try {
+      const bulk = await this.womService.getBulkHiscores(groupId);
+      const players = bulk.map(b => b.player).filter(p => p && p.displayName) as Array<any>;
+      this.updateTotal.set(players.length);
+
+      for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        const name = p.displayName;
+        this.updateCurrentIndex.set(i + 1);
+        this.updateCurrentName.set(name);
+        try {
+          await this.womService.updatePlayer(name);
+          this.updateSuccessCount.update(n => n + 1);
+        } catch (err: any) {
+          this.updateFailureCount.update(n => n + 1);
+          this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
+        }
+        // wait 500ms between calls
+        await this.sleep(500);
+      }
+
+      this.addToast(`Finished updating members: ${this.updateSuccessCount()} succeeded, ${this.updateFailureCount()} failed.`);
+      // refresh scores to reflect updates
+      await this.refreshAll();
+    } catch (err: any) {
+      this.addToast(`Update process failed: ${err?.message ?? err}`);
+    } finally {
+      this.isUpdatingAllGroupMembers.set(false);
+      this.updateCurrentIndex.set(0);
+      this.updateCurrentName.set('');
+    }
   }
 }

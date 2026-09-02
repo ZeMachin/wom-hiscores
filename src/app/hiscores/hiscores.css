@@ -328,3 +328,131 @@ select {
     width: 100%;
   }
 }
+
+/* Modal and toast styles added for update dialog and progress */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  background: radial-gradient(circle at top, rgba(210, 180, 120, 0.18), transparent 32%), linear-gradient(180deg, #3d3321 0%, #1c160f 100%);
+}
+
+.progress-bar {
+  height: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 8px 0 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6fdc6f 0%, #2aa84f 100%);
+  transition: width 240ms ease;
+}
+
+.toast-container {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10000;
+}
+
+.toast {
+  background: rgba(20,20,20,0.9);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  min-width: 200px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toast-text {
+  flex: 1 1 auto;
+  padding-right: 8px;
+}
+
+.toast-dismiss {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-dismiss:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+/* Toast animations */
+@keyframes toast-fade-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toast-fade-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+.toast {
+  will-change: opacity, transform;
+  animation: toast-fade-in 220ms cubic-bezier(.2,.9,.3,1) both;
+}
+
+.toast.closing {
+  animation: toast-fade-out 220ms ease both !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none !important;
+    transform: none !important;
+  }
+  .toast.closing {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-card {
+    max-width: 92%;
+  }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    align-items: center;
+  }
+}
