@@ -666,57 +666,58 @@ export class Hiscores implements OnInit {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  private isRateLimitError(err: any): boolean {
+    if (!err) return false;
+    if (typeof err === 'string') return err.includes('429');
+    if (err.status === 429 || err.statusCode === 429) return true;
+    if (err.response && (err.response.status === 429 || err.response.statusCode === 429)) return true;
+    if (err.message && typeof err.message === 'string' && err.message.includes('429')) return true;
+    return false;
+  }
+
   async startGroupUpdate(): Promise<void> {
     const groupId = this.selectedGroupId();
     if (!groupId) {
       this.addToast('No group selected.');
-      try {
-        const bulk = await this.womService.getBulkHiscores(groupId!);
-        const players = bulk.map(b => b.player).filter(p => p && p.displayName) as Array<any>;
-        this.updateTotal.set(players.length);
-        this.updateStartTime.set(Date.now());
+      return;
+    }
 
-        for (let i = 0; i < players.length; i++) {
-          const p = players[i];
-          const name = p.displayName;
-          this.updateCurrentIndex.set(i + 1);
-          this.updateCurrentName.set(name);
-          const iterationStart = Date.now();
+    this.closeUpdateDialog();
+    this.isUpdatingAllGroupMembers.set(true);
+    try {
+      const verification = this.verificationCode();
 
-          try {
-            await this.womService.updatePlayer(name);
-            this.updateSuccessCount.update(n => n + 1);
-          } catch (err: any) {
-            this.updateFailureCount.update(n => n + 1);
-            this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
+      // Retry loop for updateGroup in case of rate limiting
+      let attempt = 0;
+      const maxAttempts = 10;
+      while (true) {
+        try {
+          const result = await this.womService.updateGroup(groupId, verification);
+          const message = (result as any)?.message ?? (result as any)?.count ?? JSON.stringify(result);
+          this.addToast(`Group update requested: ${message}`);
+          // refresh local scores after a short delay to allow server to process
+          await this.sleep(1000);
+          await this.refreshAll();
+          break;
+        } catch (err: any) {
+          if (this.isRateLimitError(err)) {
+            attempt++;
+            if (attempt > maxAttempts) {
+              this.addToast('Rate limit persists; aborting group update.');
+              break;
+            }
+            this.addToast('Rate limited by API — pausing 5s, increasing delay and retrying...');
+            await this.sleep(5000);
+            // increase base sleep for individual updates as well
+            // note: startIndividualUpdate will derive its own sleepMs but we persist a larger default by nudging updateEtaSeconds (not ideal)
+            continue;
           }
-
-          // wait 1500ms between calls
-          const sleepMs = 1500;
-
-          // compute ETA
-          const now = Date.now();
-          const elapsed = now - (this.updateStartTime() ?? now);
-          const completed = i + 1;
-          const avgPer = completed > 0 ? elapsed / completed : sleepMs;
-          const remaining = Math.max(0, players.length - completed);
-          console.log('Elapsed:', elapsed, 'ms, Completed:', completed, 'Remaining:', remaining, 'Avg per:', avgPer, 'ms');
-          const etaMs = Math.ceil(avgPer * remaining);
-          console.log(`ETA: ${etaMs} ms`);
-          this.updateEtaSeconds.set(Math.ceil(etaMs / 1000));
-
-          // if there's remaining time, include sleep in ETA estimation
-          await this.sleep(sleepMs);
+          this.addToast(`Group update failed: ${err?.message ?? err}`);
+          break;
         }
-      } catch (err: any) {
-        this.addToast(`Update process failed: ${err?.message ?? err}`);
-      } finally {
-        this.isUpdatingAllGroupMembers.set(false);
-        this.updateCurrentIndex.set(0);
-        this.updateCurrentName.set('');
-        this.updateStartTime.set(null);
-        this.updateEtaSeconds.set(0);
       }
+    } finally {
+      this.isUpdatingAllGroupMembers.set(false);
     }
   }
 
@@ -741,35 +742,54 @@ export class Hiscores implements OnInit {
       const players = bulk.map(b => b.player).filter(p => p && p.displayName) as Array<any>;
       this.updateTotal.set(players.length);
 
+      // per-player loop with rate-limit retries
+      let baseSleepMs = 500; // initial 0.5s between calls
+      const maxRetries = 10;
       for (let i = 0; i < players.length; i++) {
         const p = players[i];
         const name = p.displayName;
         this.updateCurrentIndex.set(i + 1);
         this.updateCurrentName.set(name);
-        try {
-          await this.womService.updatePlayer(name);
-          this.updateSuccessCount.update(n => n + 1);
-        } catch (err: any) {
-          this.updateFailureCount.update(n => n + 1);
-          this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
+
+        let attempt = 0;
+        let succeeded = false;
+        while (!succeeded) {
+          try {
+            await this.womService.updatePlayer(name);
+            this.updateSuccessCount.update(n => n + 1);
+            succeeded = true;
+          } catch (err: any) {
+            if (this.isRateLimitError(err)) {
+              attempt++;
+              if (attempt > maxRetries) {
+                this.updateFailureCount.update(n => n + 1);
+                this.addToast(`Giving up updating ${name} after ${maxRetries} retries due to rate limiting.`);
+                break;
+              }
+              // on rate limit: pause 5s, increase inter-call delay
+              this.addToast(`Rate limited updating ${name} — pausing 5s and increasing delay...`);
+              await this.sleep(5000);
+              baseSleepMs += 500;
+              continue; // retry the same call
+            }
+            // non-rate-limit error: record failure and stop retrying this player
+            this.updateFailureCount.update(n => n + 1);
+            this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
+            break;
+          }
         }
 
-        // wait 1500ms between calls
-        const sleepMs = 1500;
-
-        // compute ETA
+        // compute ETA using elapsed time and baseSleepMs
         const now = Date.now();
         const elapsed = now - (this.updateStartTime() ?? now);
         const completed = i + 1;
-        const avgPer = completed > 0 ? elapsed / completed : sleepMs;
+        const avgPer = completed > 0 ? elapsed / completed : baseSleepMs;
         const remaining = Math.max(0, players.length - completed);
-        console.log('Elapsed:', elapsed, 'ms, Completed:', completed, 'Remaining:', remaining, 'Avg per:', avgPer, 'ms');
         const etaMs = Math.ceil(avgPer * remaining);
-        console.log(`ETA: ${etaMs} ms`);
         this.updateEtaSeconds.set(Math.ceil(etaMs / 1000));
 
-        // if there's remaining time, include sleep in ETA estimation
-        await this.sleep(sleepMs);
+        // wait between calls
+        await this.sleep(baseSleepMs);
       }
 
       this.addToast(`Finished updating members: ${this.updateSuccessCount()} succeeded, ${this.updateFailureCount()} failed.`);
