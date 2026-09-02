@@ -195,6 +195,13 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="apiKey">API Key (optional)</label>
+        <div class="input-group">
+          <input id="apiKey" type="text" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Enter API key to use for member updates (kept in memory only)" />
+        </div>
+      </div>
+
       <div class="button-group">
         <button type="button" class="osrs-button" (click)="closeUpdateDialog()">Cancel</button>
       </div>

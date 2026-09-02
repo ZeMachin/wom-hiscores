@@ -4,7 +4,7 @@ import { GroupHiscoresSkillData, GroupHiscoresBossData, GroupHiscoresActivityDat
 import { environment } from '../../environments/environment';
 
 // const API_KEY = environment.API_KEY;
-// const userAgent = environment.agentName;
+const userAgent = environment.agentName;
 
 export type Score = {
   metric: Metric;
@@ -368,18 +368,22 @@ export class WomService {
   getBulkHiscores(groupId: number): Promise<{
     player: PlayerResponse;
     data: SnapshotResponse;
-}[]> {
+  }[]> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     return client.groups.getGroupBulkHiscores(groupId);
   }
-  
-  updateGroup(groupId: number, verificationCode: string): Promise<GenericCountMessageResponse> {    
+
+  updateGroup(groupId: number, verificationCode: string): Promise<GenericCountMessageResponse> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
     return client.groups.updateAll(groupId, verificationCode);
   }
 
-  updatePlayer(playerName: string): Promise<PlayerDetailsResponse> {
+  updatePlayer(playerName: string, apiKey?: string): Promise<PlayerDetailsResponse> {
     if (!this.isBrowser) throw new Error('API calls can only be made in a browser environment with localStorage support.');
-    return client.players.updatePlayer(playerName);
+    const updatePlayerClient = apiKey ? new WOMClient({
+      apiKey,
+      userAgent
+    }) : client;
+    return updatePlayerClient.players.updatePlayer(playerName);
   }
 }

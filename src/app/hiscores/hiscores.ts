@@ -39,6 +39,7 @@ export class Hiscores implements OnInit {
   isUpdatingAllGroupMembers = signal(false);
   showUpdateDialog = signal(false);
   verificationCode = signal('');
+  apiKey = signal('');
   toasts = signal<Array<{ id: number; text: string; closing?: boolean }>>([]);
   readonly maxVisibleToasts = 3;
   visibleToasts = computed(() => {
@@ -755,7 +756,7 @@ export class Hiscores implements OnInit {
         let succeeded = false;
         while (!succeeded) {
           try {
-            await this.womService.updatePlayer(name);
+            await this.womService.updatePlayer(name, this.apiKey() || undefined);
             this.updateSuccessCount.update(n => n + 1);
             succeeded = true;
           } catch (err: any) {
