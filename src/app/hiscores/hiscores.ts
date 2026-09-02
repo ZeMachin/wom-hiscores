@@ -52,6 +52,8 @@ export class Hiscores implements OnInit {
   updateCurrentName = signal('');
   updateSuccessCount = signal(0);
   updateFailureCount = signal(0);
+  updateStartTime = signal<number | null>(null);
+  updateEtaSeconds = signal(0);
   isRefreshingSkills = signal(false);
   isRefreshingBosses = signal(false);
   isRefreshingActivities = signal(false);
@@ -668,23 +670,53 @@ export class Hiscores implements OnInit {
     const groupId = this.selectedGroupId();
     if (!groupId) {
       this.addToast('No group selected.');
-      return;
-    }
-    const verification = this.verificationCode();
-    this.closeUpdateDialog();
-    this.isUpdatingAllGroupMembers.set(true);
-    try {
-      const result = await this.womService.updateGroup(groupId, verification);
-      // show server response
-      const message = (result as any)?.message ?? (result as any)?.count ?? JSON.stringify(result);
-      this.addToast(`Group update requested: ${message}`);
-      // refresh local scores after a short delay to allow server to process
-      await this.sleep(1000);
-      await this.refreshAll();
-    } catch (err: any) {
-      this.addToast(`Group update failed: ${err?.message ?? err}`);
-    } finally {
-      this.isUpdatingAllGroupMembers.set(false);
+      try {
+        const bulk = await this.womService.getBulkHiscores(groupId!);
+        const players = bulk.map(b => b.player).filter(p => p && p.displayName) as Array<any>;
+        this.updateTotal.set(players.length);
+        this.updateStartTime.set(Date.now());
+
+        for (let i = 0; i < players.length; i++) {
+          const p = players[i];
+          const name = p.displayName;
+          this.updateCurrentIndex.set(i + 1);
+          this.updateCurrentName.set(name);
+          const iterationStart = Date.now();
+
+          try {
+            await this.womService.updatePlayer(name);
+            this.updateSuccessCount.update(n => n + 1);
+          } catch (err: any) {
+            this.updateFailureCount.update(n => n + 1);
+            this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
+          }
+
+          // wait 1500ms between calls
+          const sleepMs = 1500;
+
+          // compute ETA
+          const now = Date.now();
+          const elapsed = now - (this.updateStartTime() ?? now);
+          const completed = i + 1;
+          const avgPer = completed > 0 ? elapsed / completed : sleepMs;
+          const remaining = Math.max(0, players.length - completed);
+          console.log('Elapsed:', elapsed, 'ms, Completed:', completed, 'Remaining:', remaining, 'Avg per:', avgPer, 'ms');
+          const etaMs = Math.ceil(avgPer * remaining);
+          console.log(`ETA: ${etaMs} ms`);
+          this.updateEtaSeconds.set(Math.ceil(etaMs / 1000));
+
+          // if there's remaining time, include sleep in ETA estimation
+          await this.sleep(sleepMs);
+        }
+      } catch (err: any) {
+        this.addToast(`Update process failed: ${err?.message ?? err}`);
+      } finally {
+        this.isUpdatingAllGroupMembers.set(false);
+        this.updateCurrentIndex.set(0);
+        this.updateCurrentName.set('');
+        this.updateStartTime.set(null);
+        this.updateEtaSeconds.set(0);
+      }
     }
   }
 
@@ -702,6 +734,7 @@ export class Hiscores implements OnInit {
     this.updateCurrentName.set('');
     this.updateSuccessCount.set(0);
     this.updateFailureCount.set(0);
+    this.updateStartTime.set(Date.now());
 
     try {
       const bulk = await this.womService.getBulkHiscores(groupId);
@@ -720,8 +753,23 @@ export class Hiscores implements OnInit {
           this.updateFailureCount.update(n => n + 1);
           this.addToast(`Failed updating ${name}: ${err?.message ?? err}`);
         }
-        // wait 500ms between calls
-        await this.sleep(500);
+
+        // wait 1500ms between calls
+        const sleepMs = 1500;
+
+        // compute ETA
+        const now = Date.now();
+        const elapsed = now - (this.updateStartTime() ?? now);
+        const completed = i + 1;
+        const avgPer = completed > 0 ? elapsed / completed : sleepMs;
+        const remaining = Math.max(0, players.length - completed);
+        console.log('Elapsed:', elapsed, 'ms, Completed:', completed, 'Remaining:', remaining, 'Avg per:', avgPer, 'ms');
+        const etaMs = Math.ceil(avgPer * remaining);
+        console.log(`ETA: ${etaMs} ms`);
+        this.updateEtaSeconds.set(Math.ceil(etaMs / 1000));
+
+        // if there's remaining time, include sleep in ETA estimation
+        await this.sleep(sleepMs);
       }
 
       this.addToast(`Finished updating members: ${this.updateSuccessCount()} succeeded, ${this.updateFailureCount()} failed.`);
@@ -733,6 +781,18 @@ export class Hiscores implements OnInit {
       this.isUpdatingAllGroupMembers.set(false);
       this.updateCurrentIndex.set(0);
       this.updateCurrentName.set('');
+      this.updateStartTime.set(null);
+      this.updateEtaSeconds.set(0);
     }
+  }
+
+  formatDuration(seconds: number): string {
+    if (!seconds || seconds <= 0) return '0s';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+    if (mins > 0) return `${mins}m ${secs}s`;
+    return `${secs}s`;
   }
 }

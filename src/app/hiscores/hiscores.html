@@ -184,7 +184,7 @@
         <label>Update method</label>
         <div class="button-group">
           <button type="button" class="osrs-button" (click)="startGroupUpdate()">Update whole group (requires verification code)</button>
-          <button type="button" class="osrs-button" (click)="startIndividualUpdate()">Update members individually (0.5s between each)</button>
+          <button type="button" class="osrs-button" (click)="startIndividualUpdate()">Update members individually (1.5s between each)</button>
         </div>
       </div>
 
@@ -217,6 +217,7 @@
           <div class="progress-fill" [style.width.%]="updateTotal() ? (updateCurrentIndex() / updateTotal() * 100) : 0"></div>
         </div>
         <p class="text-sm">Success: {{ updateSuccessCount() }} • Failures: {{ updateFailureCount() }}</p>
+        <p class="text-sm">ETA: {{ formatDuration(updateEtaSeconds()) }}</p>
       </div>
     </div>
   </div>
