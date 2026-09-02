@@ -283,6 +283,7 @@ select {
 .osrs-select {
   border-radius: 5px;
   padding: 5px;
+  height: 52px;
 }
 
 .small-button {

@@ -40,15 +40,15 @@
   <div class="card osrs-panel">
     <div class="panel-header compact">
       <div>
-        <h3 class="panel-title">Refresh Options</h3>
-        <p class="panel-subtitle">Refresh metrics by category or refresh everything at once.</p>
+        <!-- <h3 class="panel-title">Refresh Options</h3> -->
+        <p class="panel-subtitle">Refresh all player metrics or update all members of the selected group.</p>
       </div>
     </div>
 
     <div class="button-group">
       <button type="button" class="osrs-button" (click)="refreshAll()"
         [disabled]="isRefreshingAll() || (refreshingMetrics().size > 0)">
-        Refresh All
+        Refresh All Metrics
       </button>
       <button type="button" class="osrs-button" (click)="onUpdateAllGroupMembersClick()"
         [disabled]="isUpdatingAllGroupMembers()">
