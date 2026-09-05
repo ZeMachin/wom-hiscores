@@ -189,16 +189,16 @@
       </div>
 
       <div class="form-group">
-        <label for="verificationCode">Verification Code</label>
+        <label for="verificationCode">Group Verification Code</label>
         <div class="input-group">
-          <input id="verificationCode" type="text" [ngModel]="verificationCode()" (ngModelChange)="verificationCode.set($event)" placeholder="Enter verification code (if available)" />
+          <input id="verificationCode" type="password" [ngModel]="verificationCode()" (ngModelChange)="verificationCode.set($event)" placeholder="Enter verification code (if available)" />
         </div>
       </div>
 
       <div class="form-group">
         <label for="apiKey">API Key (optional)</label>
         <div class="input-group">
-          <input id="apiKey" type="text" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Enter API key to use for member updates (kept in memory only)" />
+          <input id="apiKey" type="password" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Enter API key to use for member updates (kept in memory only)" />
         </div>
       </div>
 
