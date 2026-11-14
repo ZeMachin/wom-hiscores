@@ -180,25 +180,31 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Update method</label>
+      <div class="update-method">
+        <h4>Update whole group</h4>
+        <p class="text-sm">Requires only the group verification code. An API key is not needed.</p>
+        <div class="form-group">
+          <label for="verificationCode">Group verification code (required)</label>
+          <div class="input-group">
+            <input id="verificationCode" type="password" required [ngModel]="verificationCode()" (ngModelChange)="verificationCode.set($event)" placeholder="Enter group verification code" />
+          </div>
+        </div>
         <div class="button-group">
-          <button type="button" class="osrs-button" (click)="startGroupUpdate()">Update whole group (requires verification code)</button>
+          <button type="button" class="osrs-button" (click)="startGroupUpdate()" [disabled]="!verificationCode().trim()">Update whole group</button>
+        </div>
+      </div>
+
+      <div class="update-method">
+        <h4>Update members individually</h4>
+        <p class="text-sm">The API key is optional and can make the update faster. A group verification code is not needed. The key is kept in memory only.</p>
+        <div class="form-group">
+          <label for="apiKey">API key (optional)</label>
+          <div class="input-group">
+            <input id="apiKey" type="password" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Enter API key to speed up updates" />
+          </div>
+        </div>
+        <div class="button-group">
           <button type="button" class="osrs-button" (click)="startIndividualUpdate()">Update members individually</button>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="verificationCode">Group Verification Code</label>
-        <div class="input-group">
-          <input id="verificationCode" type="password" [ngModel]="verificationCode()" (ngModelChange)="verificationCode.set($event)" placeholder="Enter verification code (if available)" />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="apiKey">API Key (optional)</label>
-        <div class="input-group">
-          <input id="apiKey" type="password" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Enter API key to use for member updates (kept in memory only)" />
         </div>
       </div>
 

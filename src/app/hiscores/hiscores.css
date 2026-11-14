@@ -346,10 +346,26 @@ select {
 .modal-card {
   width: 100%;
   max-width: 720px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   border-radius: 12px;
   padding: 18px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
   background: radial-gradient(circle at top, rgba(210, 180, 120, 0.18), transparent 32%), linear-gradient(180deg, #3d3321 0%, #1c160f 100%);
+}
+
+.update-method + .update-method {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 18px;
+}
+
+.update-method h4 {
+  margin: 0 0 8px;
+  color: #f4e7b9;
+}
+
+.update-method > .text-sm {
+  margin: 0 0 16px;
 }
 
 .progress-bar {
